@@ -1,0 +1,52 @@
+{
+  "name": "nb02-welive-team3",
+  "version": "1.0.0",
+  "description": "welive 고급 프로젝트",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon --watch src --exec ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down --volumes",
+    "docker:clean": "docker compose down --volumes --rmi all --remove-orphans"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JONGJIN-LEE1/nb02-welive-team3.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/JONGJIN-LEE1/nb02-welive-team3/issues"
+  },
+  "homepage": "https://github.com/JONGJIN-LEE1/nb02-welive-team3#readme",
+  "dependencies": {
+    "@types/cors": "^2.8.19",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "csv-parser": "^3.2.0",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "reflect-metadata": "^0.2.2",
+    "socket.io": "^4.8.1",
+    "typeorm": "^0.3.26"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.9",
+    "@types/dotenv": "^6.1.1",
+    "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.5.1",
+    "@types/socket.io": "^3.0.1",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  }
+}
