@@ -75,6 +75,9 @@ export class User {
   @OneToMany(() => Poll, (poll) => poll.user)
   polls!: Poll[];
 
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
+
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
 }
