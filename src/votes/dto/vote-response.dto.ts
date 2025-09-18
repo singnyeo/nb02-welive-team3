@@ -1,6 +1,6 @@
 export interface VoteResponseDto {
   message: string;
-  updatedOption?: {
+  updatedOption: {
     id: string;
     title: string;
     votes: number;
@@ -10,7 +10,7 @@ export interface VoteResponseDto {
     title: string;
     votes: number;
   };
-  options?: Array<{
+  options: Array<{
     id: string;
     title: string;
     votes: number;
