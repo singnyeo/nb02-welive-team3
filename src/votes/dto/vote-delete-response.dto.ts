@@ -1,6 +1,6 @@
 export interface VoteDeleteResponseDto {
   message: string;
-  updatedOption?: {
+  updatedOption: {
     id: string;
     title: string;
     votes: number;
