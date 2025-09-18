@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -14,6 +15,12 @@ import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
 import { Vote } from './vote.entity';
+=======
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, OneToOne } from 'typeorm';
+import { Apartment } from './apartment.entity';
+import { Resident } from './resident.entity';
+import { Complaint } from './complaint.entity';
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 
 // =
 // : 사용자
@@ -46,10 +53,14 @@ export class User {
   @Column()
   name!: string;
 
-  @Column({ unique: true })
+  @Column()
   email!: string;
 
+<<<<<<< HEAD
   @Column({ unique: true })
+=======
+  @Column()
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
   contact!: string;
 
   @Column({ nullable: true })
@@ -76,6 +87,7 @@ export class User {
   apartment?: Apartment;
 
   @Column()
+<<<<<<< HEAD
   apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
@@ -92,10 +104,14 @@ export class User {
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
+=======
+  apartmentId!: string;
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 
-  @CreateDateColumn()
-  createdAt!: Date;
+  @OneToMany(() => Complaint, (complaint) => complaint.user)
+  complaints!: Complaint[];
 
+<<<<<<< HEAD
   @UpdateDateColumn()
   updatedAt!: Date;
 
@@ -107,4 +123,14 @@ export class User {
 
   @Column({ nullable: true })
   refreshToken?: string;
+=======
+  @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[];
+
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 }

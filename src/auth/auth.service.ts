@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import z from 'zod';
 import {
   LoginRequestBodySchema,
@@ -312,3 +313,6 @@ export const refresh = async (userId: string, refreshToken: string) => {
 
   return;
 };
+=======
+export const signup = async () => {};
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
