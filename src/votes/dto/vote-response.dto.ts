@@ -1,8 +1,18 @@
-import { OptionResult } from "../../polls/dto/option-response.dto";
-
 export interface VoteResponseDto {
   message: string;
-  updatedOption?: OptionResult;
-  winnerOption?: OptionResult;
-  options?: OptionResult[];
+  updatedOption?: {
+    id: string;
+    title: string;
+    votes: number;
+  };
+  winnerOption?: {
+    id: string;
+    title: string;
+    votes: number;
+  };
+  options?: Array<{
+    id: string;
+    title: string;
+    votes: number;
+  }>;
 }
