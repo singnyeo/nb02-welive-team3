@@ -85,6 +85,17 @@ export class User {
   @OneToMany(() => Notice, (notice) => notice.user)
   notices!: Notice[];
 
+<<<<<<< HEAD
   @UpdateDateColumn()
   updatedAt!: Date;
+=======
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
+
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+>>>>>>> 9620ecc (fix: User 에 Vote 관계성 추가)
 }
