@@ -1,5 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, OneToOne } from 'typeorm';
 import { Apartment } from './apartment.entity';
+import { Resident } from './resident.entity';
+import { Complaint } from './complaint.entity';
+
+// =
+// : 사용자
+// =
 
 export enum UserRole {
   USER = 'USER',
@@ -11,6 +17,7 @@ export enum JoinStatus {
   PENDING = 'PENDING',
   APPROVED = 'APPROVED',
   REJECTED = 'REJECTED',
+  NEED_UPDATE = 'NEED_UPDATE',
 }
 
 @Entity('users')
@@ -25,49 +32,52 @@ export class User {
   password!: string;
 
   @Column()
-  contact!: string;
-
-  @Column()
   name!: string;
 
-  @Column({ unique: true })
+  @Column()
   email!: string;
 
-  @Column({
-    type: 'enum',
-    enum: UserRole,
-    default: UserRole.USER,
-  })
-  role!: UserRole;
+  @Column()
+  contact!: string;
 
-  @Column({
-    type: 'enum',
-    enum: JoinStatus,
-    default: JoinStatus.PENDING,
-  })
-  joinStatus!: JoinStatus;
+  @Column({ nullable: true })
+  avatar?: string;
 
   @Column({ default: true })
   isActive!: boolean;
 
-  @Column({ nullable: true })
-  apartmentDong!: string;
+  @Column({ type: 'enum', enum: UserRole })
+  role!: UserRole;
+
+  @Column({ type: 'enum', enum: JoinStatus, default: JoinStatus.PENDING })
+  joinStatus!: JoinStatus;
+
+  @OneToOne(() => Resident, (resident) => resident.user, { nullable: true })
+  @JoinColumn({ name: 'residentId' })
+  resident?: Resident;
 
   @Column({ nullable: true })
-  apartmentHo!: string;
+  residentId?: string;
 
-  @ManyToOne(() => Apartment, (apartment) => apartment.users, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  apartment!: Apartment;
+  @ManyToOne(() => Apartment, (apartment) => apartment.users, { nullable: true })
+  @JoinColumn({ name: 'apartmentId' })
+  apartment?: Apartment;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  avatarUrl?: string | null;
+  @Column()
+  apartmentId!: string;
 
-  @CreateDateColumn()
-  createdAt!: Date;
+  @OneToMany(() => Complaint, (complaint) => complaint.user)
+  complaints!: Complaint[];
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[];
+
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
+
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
 }
