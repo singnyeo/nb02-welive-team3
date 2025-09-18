@@ -10,8 +10,13 @@ export class PollBoard {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+<<<<<<< HEAD
   // @OneToMany(() => Poll, (poll) => poll.pollBoard)
   // polls!: Poll[];
+=======
+  @OneToMany(() => Poll, (poll) => poll.pollBoard)
+  polls!: Poll[];
+>>>>>>> a95cb38 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 
   @Column()
   apartmentId!: string;

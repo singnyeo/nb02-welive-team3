@@ -69,6 +69,7 @@ export class User {
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
+<<<<<<< HEAD
   // @OneToMany(() => Notice, (notice) => notice.user)
   // notices!: Notice[];
 
@@ -80,4 +81,14 @@ export class User {
 
   // @OneToMany(() => Comment, (comment) => comment.user)
   // comments!: Comment[];
+=======
+  @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[];
+
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+>>>>>>> a95cb38 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 }
