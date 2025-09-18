@@ -88,6 +88,9 @@ export class User {
   @OneToMany(() => Poll, (poll) => poll.user)
   polls!: Poll[];
 
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
+
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
 >>>>>>> a95cb38 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
