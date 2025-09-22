@@ -6,16 +6,14 @@ import env from '../config/env';
 
 // ACCESS_TOKEN 생성
 export const generateAccessToken = (payload: Payload): string => {
-  const { _iat, _exp, ...other } = payload;
   const expiresIn = env.JWT_ACCESS_EXPIRATION;
-  return jwt.sign(other, env.JWT_ACCESS_SECRET, { expiresIn });
+  return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn });
 };
 
 // REFRESH_TOKEN 생성
 export const generateRefreshToken = (payload: Payload): string => {
-  const { _iat, _exp, ...other } = payload;
   const expiresIn = env.JWT_REFRESH_EXPIRATION;
-  return jwt.sign(other, env.JWT_REFRESH_SECRET, { expiresIn });
+  return jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn });
 };
 
 // ACCESS_TOKEN 검증
