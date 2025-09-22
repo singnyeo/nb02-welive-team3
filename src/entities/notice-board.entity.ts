@@ -17,8 +17,8 @@ export class NoticeBoard {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @OneToMany(() => Notice, (notice) => notice.noticeBoard)
-  notices!: Notice[];
+  // @OneToMany(() => Notice, (notice) => notice.noticeBoard)
+  // notices!: Notice[];
 
   @Column()
   apartmentId!: string;

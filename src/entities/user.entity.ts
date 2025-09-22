@@ -81,14 +81,14 @@ export class User {
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  @OneToMany(() => Notice, (notice) => notice.user)
-  notices!: Notice[];
+  // @OneToMany(() => Notice, (notice) => notice.user)
+  // notices!: Notice[];
 
-  @OneToMany(() => Poll, (poll) => poll.user)
-  polls!: Poll[];
+  // @OneToMany(() => Poll, (poll) => poll.user)
+  // polls!: Poll[];
 
-  @OneToMany(() => Vote, (vote) => vote.user)
-  votes!: Vote[];
+  // @OneToMany(() => Vote, (vote) => vote.user)
+  // votes!: Vote[];
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
