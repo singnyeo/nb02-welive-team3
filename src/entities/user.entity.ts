@@ -1,4 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, OneToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
@@ -34,10 +45,10 @@ export class User {
   @Column()
   name!: string;
 
-  @Column()
+  @Column({ unique: true })
   email!: string;
 
-  @Column()
+  @Column({ unique: true })
   contact!: string;
 
   @Column({ nullable: true })
@@ -64,7 +75,7 @@ export class User {
   apartment?: Apartment;
 
   @Column()
-  apartmentId!: string;
+  apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
@@ -80,4 +91,19 @@ export class User {
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
+
+  @Column({ nullable: true })
+  lastLoginAt?: Date;
+
+  @Column({ nullable: true })
+  refreshToken?: string;
 }
