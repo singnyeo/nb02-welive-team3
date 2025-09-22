@@ -59,5 +59,4 @@ export class Poll {
 
   @OneToMany(() => PollOption, (option) => option.poll, { cascade: true })
   options!: PollOption[];
-  pollBoard: any;
 }
