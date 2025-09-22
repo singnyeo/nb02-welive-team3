@@ -24,13 +24,6 @@ import {
   handleSignupAdmin,
   handleSignupSuperAdmin,
   handleUpdateAdmin,
-<<<<<<< HEAD
-  handleUpdateAdminsStatus,
-  handleUpdateAdminStatus,
-  handleUpdateResidentsStatus,
-  handleUpdateResidentStatus,
-=======
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 } from './auth.controller';
 
 const auth = express.Router();
