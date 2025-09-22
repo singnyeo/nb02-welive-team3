@@ -13,6 +13,7 @@ import {
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
+import { Vote } from './vote.entity';
 
 // =
 // : 사용자
