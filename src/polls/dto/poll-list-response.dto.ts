@@ -10,3 +10,8 @@ export interface PollListResponseDto {
   endDate: string;
   status: "IN_PROGRESS" | "PENDING" | "COMPLETED";
 }
+
+export interface PollsListWrapperDto {
+  polls: PollListResponseDto[];
+  totalCount: number;
+}
