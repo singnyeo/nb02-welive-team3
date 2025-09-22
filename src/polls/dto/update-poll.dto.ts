@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { PollOptionUpdateSchema } from "./poll-option-update.dto";
 
 const dateTimeSchema = z
   .string()
@@ -15,11 +16,7 @@ export const UpdatePollDtoSchema = z.object({
   endDate: dateTimeSchema,
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]),
   options: z
-    .array(
-      z.object({
-        title: z.string().min(1, "선택지를 입력해주세요"),
-      })
-    )
+    .array(PollOptionUpdateSchema)
     .min(2, "최소 2개의 선택지가 필요합니다")
     .optional(),
 });
