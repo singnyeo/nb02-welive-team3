@@ -1,12 +1,18 @@
 import { z } from "zod";
 
+const dateTimeSchema = z
+  .string()
+  .refine((val) => !isNaN(Date.parse(val)), {
+    message: "올바른 날짜 형식이 아닙니다 (ISO 8601)",
+  });
+
 export const UpdatePollDtoSchema = z.object({
   userId: z.string(),
   title: z.string().min(1, "제목을 입력해주세요"),
   content: z.string().min(1, "내용을 입력해주세요"),
   buildingPermission: z.string().optional(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  startDate: dateTimeSchema,
+  endDate: dateTimeSchema,
   status: z.enum(["PENDING", "IN_PROGRESS", "COMPLETED"]),
   options: z
     .array(
