@@ -1,10 +1,6 @@
-import { OptionResult } from "../../polls/dto/option-result.dto";
+import { OptionResult } from "../../polls/dto/option-response.dto";
 
 export interface VoteDeleteResponseDto {
   message: string;
-  updatedOption: {
-    id: string;
-    title: string;
-    votes: number;
-  };
+  updatedOption?: OptionResult;
 }
