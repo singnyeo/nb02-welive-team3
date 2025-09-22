@@ -93,15 +93,16 @@ export class User {
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  @OneToMany(() => Notice, (notice) => notice.user)
-  notices!: Notice[];
+  // @OneToMany(() => Notice, (notice) => notice.user)
+  // notices!: Notice[];
 
-  @OneToMany(() => Poll, (poll) => poll.user)
-  polls!: Poll[];
+  // @OneToMany(() => Poll, (poll) => poll.user)
+  // polls!: Poll[];
 
-  @OneToMany(() => Vote, (vote) => vote.user)
-  votes!: Vote[];
+  // @OneToMany(() => Vote, (vote) => vote.user)
+  // votes!: Vote[];
 
+<<<<<<< HEAD
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
 =======
@@ -133,4 +134,8 @@ export class User {
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
 >>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
+=======
+  // @OneToMany(() => Comment, (comment) => comment.user)
+  // comments!: Comment[];
+>>>>>>> b9332bc (fix: 정의 되지 않은 관계성 임의 주석 처리)
 }
