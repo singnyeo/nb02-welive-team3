@@ -4,12 +4,18 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  OneToMany,
   ManyToOne,
+  // OneToMany,
   JoinColumn,
 } from "typeorm";
+<<<<<<< HEAD
 import { Comment } from "./comment.entity";
 import { User } from "./user.entity";
+=======
+import { User } from "./user.entity";
+import { ComplaintBoard } from "./complaint-board.entity";
+// import { Comment } from "./comment.entity";
+>>>>>>> 7ea930f (fix: complaint board와 관계성 추가)
 
 export type ComplaintStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED";
 
@@ -25,6 +31,16 @@ export class Complaint {
   @Column({ type: "uuid" })
   userId!: string;
 
+  @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  @JoinColumn({ name: "board_id" })
+  complaintBoard!: ComplaintBoard | null;
+
+  @Column({ type: "uuid", nullable: true })
+  boardId!: string | null;
+
   @Column({ length: 100 })
   title!: string;
 
@@ -33,9 +49,6 @@ export class Complaint {
 
   @Column({ default: true })
   isPublic!: boolean;
-
-  @Column({ type: "uuid", nullable: true })
-  boardId!: string | null;
 
   @Column({
     type: "enum",
@@ -56,8 +69,8 @@ export class Complaint {
   @Column({ nullable: true })
   ho!: string;
 
-  @OneToMany(() => Comment, (comment) => comment.complaint)
-  comments!: Comment[];
+  // @OneToMany(() => Comment, (comment) => comment.complaint)
+  // comments!: Comment[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;
