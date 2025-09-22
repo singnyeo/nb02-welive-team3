@@ -80,4 +80,3 @@ export class User {
 
   // @OneToMany(() => Comment, (comment) => comment.user)
   // comments!: Comment[];
-}
