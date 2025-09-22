@@ -1,4 +1,11 @@
-import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, OneToOne, OneToMany } from 'typeorm';
+import { 
+  Entity, 
+  PrimaryGeneratedColumn, 
+  Column, 
+  JoinColumn, 
+  OneToOne, 
+  //OneToMany 
+  } from 'typeorm';
 import { Apartment } from './apartment.entity';
 
 // =
@@ -10,8 +17,8 @@ export class NoticeBoard {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @OneToMany(() => Notice, (notice) => notice.noticeBoard)
-  notices!: Notice[];
+  // @OneToMany(() => Notice, (notice) => notice.noticeBoard)
+  // notices!: Notice[];
 
   @Column()
   apartmentId!: string;

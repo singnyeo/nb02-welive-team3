@@ -10,8 +10,8 @@ export class PollBoard {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @OneToMany(() => Poll, (poll) => poll.pollBoard)
-  polls!: Poll[];
+  // @OneToMany(() => Poll, (poll) => poll.pollBoard)
+  // polls!: Poll[];
 
   @Column()
   apartmentId!: string;
