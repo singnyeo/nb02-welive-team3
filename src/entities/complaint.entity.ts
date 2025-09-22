@@ -36,6 +36,16 @@ export class Complaint {
   @Column({ type: 'uuid', nullable: true })
   boardId!: string | null;
 
+  @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
+  @JoinColumn({ name: "board_id" })
+  complaintBoard!: ComplaintBoard | null;
+
+  @Column({ type: "uuid", nullable: true })
+  boardId!: string | null;
+
   @Column({ length: 100 })
   title!: string;
 
