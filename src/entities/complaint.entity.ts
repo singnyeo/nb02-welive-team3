@@ -5,17 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  // OneToMany,
+  OneToMany,
   JoinColumn,
 } from "typeorm";
-<<<<<<< HEAD
-import { Comment } from "./comment.entity";
-import { User } from "./user.entity";
-=======
 import { User } from "./user.entity";
 import { ComplaintBoard } from "./complaint-board.entity";
-// import { Comment } from "./comment.entity";
->>>>>>> 7ea930f (fix: complaint board와 관계성 추가)
+import { Comment } from "./comment.entity";
 
 export type ComplaintStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED";
 
@@ -69,8 +64,8 @@ export class Complaint {
   @Column({ nullable: true })
   ho!: string;
 
-  // @OneToMany(() => Comment, (comment) => comment.complaint)
-  // comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.complaint)
+  comments!: Comment[];
 
   @CreateDateColumn({ name: "created_at" })
   createdAt!: Date;

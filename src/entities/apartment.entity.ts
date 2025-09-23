@@ -1,25 +1,8 @@
-<<<<<<< HEAD
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  OneToOne,
-  CreateDateColumn,
-  UpdateDateColumn,
-  DeleteDateColumn,
-} from 'typeorm';
-=======
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 import { User } from './user.entity';
 import { NoticeBoard } from './notice-board.entity';
 import { ComplaintBoard } from './complaint-board.entity';
 import { PollBoard } from './poll-board.entity';
-<<<<<<< HEAD
-import { Resident } from './resident.entity';
-=======
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 
 // =
 // : 아파트
@@ -82,31 +65,6 @@ export class Apartment {
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
 
-<<<<<<< HEAD
-  @OneToMany(() => User, (user) => user.apartment)
-  admins!: User[];
-
-  @OneToOne(() => NoticeBoard, (noticeBoard) => noticeBoard.apartment)
-  noticeBoard!: NoticeBoard;
-
-  @OneToOne(() => ComplaintBoard, (complaintBoard) => complaintBoard.apartment)
-  complaintBoard!: ComplaintBoard;
-
-  @OneToOne(() => PollBoard, (pollBoard) => pollBoard.apartment)
-  pollBoard!: PollBoard;
-
-  @OneToMany(() => Resident, (resident) => resident.apartment)
-  residents!: Resident[];
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
-
-  @DeleteDateColumn({ nullable: true })
-  deletedAt?: Date;
-=======
   @ManyToOne(() => User)
   @JoinColumn({ name: 'adminId' })
   admin!: User;
@@ -122,5 +80,4 @@ export class Apartment {
 
   @OneToOne(() => PollBoard, (pollBoard) => pollBoard.apartment)
   pollBoard!: PollBoard;
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 }
