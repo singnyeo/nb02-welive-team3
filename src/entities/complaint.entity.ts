@@ -40,6 +40,7 @@ export class Complaint {
     nullable: true,
     onDelete: "SET NULL",
   })
+  
   @JoinColumn({ name: "board_id" })
   complaintBoard!: ComplaintBoard | null;
 
