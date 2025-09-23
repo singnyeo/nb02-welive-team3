@@ -5,11 +5,13 @@ import {
   Index,
   JoinColumn,
   OneToOne,
+  ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   DeleteDateColumn
 } from "typeorm";
 import { User } from "./user.entity";
+import { Apartment } from "./apartment.entity";
 
 export enum ResidentStatus {
   RESIDENCE = 'RESIDENCE',
@@ -71,6 +73,17 @@ export class Resident {
 
   @JoinColumn()
   user?: User | null;
+
+  @ManyToOne(() => Apartment, apartment => apartment.residents, {
+    onDelete: 'CASCADE',
+    nullable: false,
+  })
+
+  @JoinColumn({ name: 'apartmentId' })
+  apartment!: Apartment;
+
+  @Column()
+  apartmentId!: string;
 
   @DeleteDateColumn({ nullable: true })
   deletedAt?: Date;
