@@ -8,8 +8,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from "typeorm";
-// import { Comment } from "../entities/comment.entity";
-import { User } from "../entities/user.entity";
+import { Comment } from "./comment.entity";
+import { User } from "./user.entity";
 
 export type ComplaintStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED";
 
