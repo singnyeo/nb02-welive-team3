@@ -1,10 +1,11 @@
 import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
 import { User } from './user.entity';
+import { NoticeBoard } from './notice-board.entity';
 //import { Apartment } from './apartment.entity';
 // import { Comment } from "../entities/comment.entity";
 
 // =
-// : 공지사항 게시판
+// : 공지사항
 // =
 export enum NoticeCategory {
     MAINTENANCE = 'MAINTENANCE',
@@ -15,8 +16,8 @@ export enum NoticeCategory {
     ETC = 'ETC',
 }
 
-@Entity('notice_boards')
-export class NoticeBoard {
+@Entity('notices')
+export class Notice {
     @PrimaryGeneratedColumn('uuid')
     id!: string;
 
@@ -31,7 +32,7 @@ export class NoticeBoard {
 
     @ManyToOne(() => NoticeBoard, { onDelete: 'RESTRICT' })
     @JoinColumn({ name: 'boardId' })
-    board!: NoticeBoard;
+    noticeBoard!: NoticeBoard;
 
     // 고정 먼저 → 최신순 정렬을 위한 키
     @Column({ type: 'boolean', default: false })
@@ -52,20 +53,14 @@ export class NoticeBoard {
 
     @Column({ type: 'text', nullable: false })
     content!: string;
-}
-
-// =
-// : 공지사항 댓글 
-// =
-@Entity('notices')
-export class Notice {
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
 
     @OneToMany(() => Comment, (c) => c.notice)
     comments!: Comment[];
 }
 
+// =
+// : 공지사항 댓글 
+// =
 @Entity('comments')
 export class Comment {
     @PrimaryGeneratedColumn('uuid')
@@ -73,9 +68,6 @@ export class Comment {
 
     @Column({ type: 'text', nullable: false })
     content!: string;
-
-    @Column({ type: 'uuid', nullable: false })
-    noticeId!: string;
 
     @ManyToOne(() => Notice, (notice) => notice.comments, { onDelete: 'CASCADE' })
     @JoinColumn({ name: 'noticeId' })
@@ -117,13 +109,9 @@ export class Notification {
     @Column({ type: 'uuid', nullable: false })
     sourceId!: string; // noticeId or commentId
 
-    @Column({ type: 'text', nullable: true })
-    message?: string;
-
     @Column({ type: 'boolean', default: false })
     isRead!: boolean;
 
     @CreateDateColumn({ type: 'timestamptz' })
     createdAt!: Date;
-
 }
