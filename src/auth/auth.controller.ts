@@ -1,58 +1,199 @@
 import { RequestHandler } from 'express';
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  LogoutRequestSchema,
+  RefreshRequestSchema,
+  RefreshResponseSchema,
+  SignupAdminRequestSchema,
+  SignupAdminResponseSchema,
+  SignupRequestSchema,
+  SignupResponseSchema,
+  SignupSuperAdminRequestSchema,
+  SignupSuperAdminResponseSchema,
+} from './auth.dto';
+import { BadRequestError, UnauthorizedError } from '../types/error.type';
+import {
+  addRefreshToken,
+  login,
+  logout,
+  refresh,
+  removeRefreshToken,
+  signup,
+  signupAdmin,
+  signupSuperAdmin,
+} from './auth.service';
+import z from 'zod';
+import {
+  deleteAccessToken,
+  deleteRefreshToken,
+  generateAccessToken,
+  generateRefreshToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from '../utils/token.util';
+import { Payload } from '../types/payload.type';
 
-export const handleSignup: RequestHandler = (_req, res) => {
-  res.status(200).send('handleSignup');
+export const handleSignup: RequestHandler = async (req, res) => {
+  const result = SignupRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+  }
+
+  const signedupUser = await signup(result.data.body);
+
+  const response: z.infer<typeof SignupResponseSchema> = {
+    id: signedupUser.id,
+    name: signedupUser.name,
+    email: signedupUser.email,
+    role: signedupUser.role,
+    joinStatus: signedupUser.joinStatus,
+    isActive: signedupUser.isActive,
+  };
+  res.status(201).json(response);
 };
 
-export const handleSignupAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleSignupAdmin');
+export const handleSignupAdmin: RequestHandler = async (req, res) => {
+  const result = SignupAdminRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+  }
+
+  const signedupUser = await signupAdmin(result.data.body);
+
+  const response: z.infer<typeof SignupAdminResponseSchema> = {
+    id: signedupUser.id,
+    name: signedupUser.name,
+    email: signedupUser.email,
+    role: signedupUser.role,
+    joinStatus: signedupUser.joinStatus,
+    isActive: signedupUser.isActive,
+  };
+  res.status(201).json(response);
 };
 
-export const handleSignupSuperAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleSignupSuperAdmin');
+export const handleSignupSuperAdmin: RequestHandler = async (req, res) => {
+  const result = SignupSuperAdminRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+  }
+
+  const signedupUser = await signupSuperAdmin(result.data.body);
+
+  const response: z.infer<typeof SignupSuperAdminResponseSchema> = {
+    id: signedupUser.id,
+    name: signedupUser.name,
+    email: signedupUser.email,
+    role: signedupUser.role,
+    joinStatus: signedupUser.joinStatus,
+    isActive: signedupUser.isActive,
+  };
+
+  res.status(201).json(response);
 };
 
-export const handleLogin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleLogin');
+export const handleLogin: RequestHandler = async (req, res) => {
+  const result = LoginRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const loggedinUser = await login(result.data.body);
+
+  const response: z.infer<typeof LoginResponseSchema> = {
+    id: loggedinUser.id,
+    name: loggedinUser.name,
+    email: loggedinUser.email,
+    role: loggedinUser.role,
+    joinStatus: loggedinUser.joinStatus,
+    isActive: loggedinUser.isActive,
+    apartmentId: loggedinUser.apartmentId,
+    apartmentName: loggedinUser.apartment?.name || null,
+    residentDong: loggedinUser.resident?.dong || null,
+    boardIds: {
+      COMPLAINT: loggedinUser.apartment?.complaintBoard?.id || null,
+      NOTICE: loggedinUser.apartment?.noticeBoard?.id || null,
+      POLL: loggedinUser.apartment?.pollBoard?.id || null,
+    },
+    username: loggedinUser.username,
+    contact: loggedinUser.contact,
+    avatar: loggedinUser.avatar || null,
+  };
+
+  const payload: Payload = { id: loggedinUser.id, role: loggedinUser.role };
+
+  const accessToken = generateAccessToken(payload);
+  const refreshToken = generateRefreshToken(payload);
+
+  await addRefreshToken(loggedinUser.id, refreshToken);
+
+  setAccessToken(res, accessToken);
+  setRefreshToken(res, refreshToken);
+
+  res.status(200).json(response);
 };
 
-export const handleLogout: RequestHandler = (_req, res) => {
-  res.status(200).send('handleLogout');
+export const handleLogout: RequestHandler = async (req, res) => {
+  const result = LogoutRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new UnauthorizedError('로그아웃 중 오류가 발생했습니다.');
+  }
+
+  const { id } = result.data.user;
+
+  await logout(id);
+
+  deleteAccessToken(res);
+  deleteRefreshToken(res);
+
+  await removeRefreshToken(id);
+
+  res.status(204).json('');
 };
 
-export const handleRefresh: RequestHandler = (_req, res) => {
-  res.status(200).send('handleRefresh');
+export const handleRefresh: RequestHandler = async (req, res) => {
+  const result = RefreshRequestSchema.safeParse(req);
+  if (!result.success) {
+    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+  }
+
+  const { id } = result.data.user;
+  const refreshToken = getRefreshToken(req);
+  if (!refreshToken) {
+    return new UnauthorizedError('인증 실패(로그인 필요)');
+  }
+
+  await refresh(id, refreshToken);
+
+  const payload: Payload = { id: result.data.user.id, role: result.data.user.role };
+  const newAccessToken = generateAccessToken(payload);
+  const newRefreshToken = generateRefreshToken(payload);
+
+  setAccessToken(res, newAccessToken);
+  setRefreshToken(res, newRefreshToken);
+
+  await addRefreshToken(id, newRefreshToken);
+
+  const response: z.infer<typeof RefreshResponseSchema> = { message: '토큰이 성공적으로 갱신되었습니다.' };
+
+  res.status(200).json(response);
 };
 
-export const handleApproveAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleApproveAdmin');
+export const handleUpdateAdminStatus: RequestHandler = (_req, res) => {
+  res.status(200).send('handleUpdateAdminStatus');
 };
 
-export const handleRejectAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleRejectAdmin');
+export const handleUpdateAdminsStatus: RequestHandler = (_req, res) => {
+  res.status(200).send('handleUpdateAdminsStatus');
 };
 
-export const handleApproveAdmins: RequestHandler = (_req, res) => {
-  res.status(200).send('handleApproveAdmins');
-};
-export const handleRejectAdmins: RequestHandler = (_req, res) => {
-  res.status(200).send('handleRejectAdmins');
+export const handleUpdateResidentStatus: RequestHandler = (_req, res) => {
+  res.status(200).send('handleUpdateResidentStatus');
 };
 
-export const handleApproveUser: RequestHandler = (_req, res) => {
-  res.status(200).send('handleApproveUser');
-};
-
-export const handleRejectUser: RequestHandler = (_req, res) => {
-  res.status(200).send('handleRejectUser');
-};
-
-export const handleApproveUsers: RequestHandler = (_req, res) => {
-  res.status(200).send('handleApproveUsers');
-};
-
-export const handleRejectUsers: RequestHandler = (_req, res) => {
-  res.status(200).send('handleRejectUsers');
+export const handleUpdateResidentsStatus: RequestHandler = (_req, res) => {
+  res.status(200).send('handleUpdateResidentsStatus');
 };
 
 export const handleUpdateAdmin: RequestHandler = (_req, res) => {
