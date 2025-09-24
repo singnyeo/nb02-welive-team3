@@ -25,14 +25,14 @@ const apartmentHo = z.string().min(1).max(8);
 const isActive = z.boolean();
 const description = z.string().min(1).max(256);
 const avatar = z.url().nullable();
-const startComplexNumber = z.number().int().min(1).max(999);
-const endComplexNumber = z.number().int().min(1).max(999);
-const startDongNumber = z.number().int().min(1).max(999);
-const endDongNumber = z.number().int().min(1).max(999);
-const startFloorNumber = z.number().int().min(1).max(999);
-const endFloorNumber = z.number().int().min(1).max(999);
-const startHoNumber = z.number().int().min(1).max(999);
-const endHoNumber = z.number().int().min(1).max(999);
+const startComplexNumber = z.string().min(1).max(8);
+const endComplexNumber = z.string().min(1).max(8);
+const startDongNumber = z.string().min(1).max(8);
+const endDongNumber = z.string().min(1).max(8);
+const startFloorNumber = z.string().min(1).max(8);
+const endFloorNumber = z.string().min(1).max(8);
+const startHoNumber = z.string().min(1).max(8);
+const endHoNumber = z.string().min(1).max(8);
 const apartmentAddress = z.string().min(1).max(512);
 const apartmentManagementNumber = z.string().min(1).max(11);
 const apartmentId = z.uuid().nullable();
@@ -56,6 +56,7 @@ export const AuthRequestParamsSchema = z.object({
 export const SignupRequestBodySchema = z.object({
   username: username,
   password: password,
+  passwordConfirm: password,
   contact: contact,
   name: name,
   email: email,
@@ -81,6 +82,7 @@ export const SignupResponseSchema = z.object({
 export const SignupAdminRequestBodySchema = z.object({
   username: username,
   password: password,
+  passwordConfirm: password,
   contact: contact,
   name: name,
   email: email,
@@ -97,10 +99,6 @@ export const SignupAdminRequestBodySchema = z.object({
   apartmentName: apartmentName,
   apartmentAddress: apartmentAddress,
   apartmentManagementNumber: apartmentManagementNumber,
-});
-
-export const SignupAdminRequestSchema = z.object({
-  body: SignupAdminRequestBodySchema,
 });
 
 export const SignupAdminResponseSchema = z.object({

@@ -15,12 +15,17 @@ import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
 import { Vote } from './vote.entity';
+<<<<<<< HEAD
 =======
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, OneToOne } from 'typeorm';
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
 >>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
+=======
+import { Poll } from './poll.entity';
+import { UserNotification } from './user-notification.entity';
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
 
 // =
 // : 사용자
@@ -86,28 +91,40 @@ export class User {
   @JoinColumn({ name: 'apartmentId' })
   apartment?: Apartment;
 
+<<<<<<< HEAD
   @Column()
 <<<<<<< HEAD
+=======
+  @Column({ nullable: true })
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
   apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  // @OneToMany(() => Notice, (notice) => notice.user)
-  // notices!: Notice[];
+  //@OneToMany(() => Notice, (notice) => notice.user)
+  //notices!: Notice[];
 
-  // @OneToMany(() => Poll, (poll) => poll.user)
-  // polls!: Poll[];
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
 
-  // @OneToMany(() => Vote, (vote) => vote.user)
-  // votes!: Vote[];
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
 
+<<<<<<< HEAD
 <<<<<<< HEAD
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
 =======
   apartmentId!: string;
 >>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
+=======
+  //   @OneToMany(() => Comment, (comment) => comment.user)
+  //   comments!: Comment[];
+
+  @OneToMany(() => UserNotification, (userNotification) => userNotification.user)
+  userNotifications!: UserNotification[];
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];

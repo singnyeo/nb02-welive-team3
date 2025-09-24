@@ -8,10 +8,10 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
-  DeleteDateColumn
-} from "typeorm";
-import { User } from "./user.entity";
-import { Apartment } from "./apartment.entity";
+  DeleteDateColumn,
+} from 'typeorm';
+import { User } from './user.entity';
+import { Apartment } from './apartment.entity';
 
 export enum ResidentStatus {
   RESIDENCE = 'RESIDENCE',
@@ -65,20 +65,18 @@ export class Resident {
   @Column({ default: false, comment: '위리브 가입 여부' })
   isRegistered!: boolean;
 
-  @OneToOne(() => User, user => user.resident, {
+  @OneToOne(() => User, (user) => user.resident, {
     cascade: true,
     nullable: true,
     onDelete: 'CASCADE',
   })
-
   @JoinColumn()
   user?: User | null;
 
-  @ManyToOne(() => Apartment, apartment => apartment.residents, {
+  @ManyToOne(() => Apartment, (apartment) => apartment.residents, {
     onDelete: 'CASCADE',
     nullable: false,
   })
-
   @JoinColumn({ name: 'apartmentId' })
   apartment!: Apartment;
 

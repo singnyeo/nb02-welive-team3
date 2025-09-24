@@ -83,8 +83,17 @@ export class Apartment {
   users!: User[];
 
 <<<<<<< HEAD
+<<<<<<< HEAD
   @OneToMany(() => User, (user) => user.apartment)
   admins!: User[];
+=======
+  // 아파트 관리자는 한 명으로 추측
+  // @OneToMany(() => User, (user) => user.apartment)
+  // admins!: User[];
+
+  @Column()
+  adminId!: string;
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
 
   @OneToOne(() => NoticeBoard, (noticeBoard) => noticeBoard.apartment)
   noticeBoard!: NoticeBoard;
