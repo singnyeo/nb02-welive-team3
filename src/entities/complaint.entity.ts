@@ -12,43 +12,43 @@ import { User } from "./user.entity";
 import { ComplaintBoard } from "./complaint-board.entity";
 import { Comment } from "./comment.entity";
 
-export type ComplaintStatus = "PENDING" | "IN_PROGRESS" | "RESOLVED";
+export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
 
-@Entity({ name: "complaints" })
+@Entity({ name: 'complaints' })
 export class Complaint {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   complaintId!: string;
 
-  @ManyToOne(() => User, (user) => user.complaints, { onDelete: "CASCADE" })
-  @JoinColumn({ name: "user_id" })
+  @ManyToOne(() => User, (user) => user.complaints, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user!: User;
 
-  @Column({ type: "uuid" })
+  @Column({ type: 'uuid' })
   userId!: string;
 
   @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
     nullable: true,
-    onDelete: "SET NULL",
+    onDelete: 'SET NULL',
   })
-  @JoinColumn({ name: "board_id" })
+  @JoinColumn({ name: 'board_id' })
   complaintBoard!: ComplaintBoard | null;
 
-  @Column({ type: "uuid", nullable: true })
+  @Column({ type: 'uuid', nullable: true })
   boardId!: string | null;
 
   @Column({ length: 100 })
   title!: string;
 
-  @Column({ type: "text" })
+  @Column({ type: 'text' })
   content!: string;
 
   @Column({ default: true })
   isPublic!: boolean;
 
   @Column({
-    type: "enum",
-    enum: ["PENDING", "IN_PROGRESS", "RESOLVED"],
-    default: "PENDING",
+    type: 'enum',
+    enum: ['PENDING', 'IN_PROGRESS', 'RESOLVED'],
+    default: 'PENDING',
   })
   status!: ComplaintStatus;
 
@@ -67,9 +67,12 @@ export class Complaint {
   @OneToMany(() => Comment, (comment) => comment.complaint)
   comments!: Comment[];
 
-  @CreateDateColumn({ name: "created_at" })
+  @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
-  @UpdateDateColumn({ name: "updated_at" })
+  @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
+
+  @OneToMany(() => Notification, (notification) => notification.complaint)
+  notifications!: Notification[];
 }

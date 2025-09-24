@@ -3,12 +3,15 @@ import app from './app';
 import env from './config/env';
 import { initSocket } from './ws/socket';
 import { AppDataSource } from './config/data-source';
+import { seed } from './seeds';
 
 const server = http.createServer(app);
 
 AppDataSource.initialize()
-  .then(() => {
+  .then(async () => {
     console.log('Database connected');
+
+    await seed();
 
     initSocket(server);
 

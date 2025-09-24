@@ -14,6 +14,8 @@ import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
 import { Vote } from './vote.entity';
+import { Poll } from './poll.entity';
+import { UserNotification } from './user-notification.entity';
 
 // =
 // : 사용자
@@ -75,20 +77,20 @@ export class User {
   @JoinColumn({ name: 'apartmentId' })
   apartment?: Apartment;
 
-  @Column()
+  @Column({ nullable: true })
   apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  // @OneToMany(() => Notice, (notice) => notice.user)
-  // notices!: Notice[];
+  //@OneToMany(() => Notice, (notice) => notice.user)
+  //notices!: Notice[];
 
-  // @OneToMany(() => Poll, (poll) => poll.user)
-  // polls!: Poll[];
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
 
-  // @OneToMany(() => Vote, (vote) => vote.user)
-  // votes!: Vote[];
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
 
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
