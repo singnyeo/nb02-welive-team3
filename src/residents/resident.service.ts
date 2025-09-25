@@ -1,9 +1,9 @@
-import { AppDataSource } from "../config/data-source";
-import { CreateResidentDto, ResidentResponseDto, ResidentResponseSchema } from "./dtos/create-resident.dto";
-import { Resident, HouseholdType, ResidentStatus } from "../entities/resident.entity";
-import { User } from "../entities/user.entity";
-import { ConflictError, NotFoundError } from "../types/error.type";
-import { Apartment } from "../entities/apartment.entity";
+import { AppDataSource } from '../config/data-source';
+import { CreateResidentDto, ResidentResponseDto, ResidentResponseSchema } from './dtos/create-resident.dto';
+import { Resident, HouseholdType, ResidentStatus } from '../entities/resident.entity';
+import { User } from '../entities/user.entity';
+import { ConflictError, NotFoundError } from '../types/error.type';
+import { Apartment } from '../entities/apartment.entity';
 import { parseCsvBuffer } from './resident-csv.util';
 
 /**

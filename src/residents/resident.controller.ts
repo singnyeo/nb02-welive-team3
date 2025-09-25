@@ -1,11 +1,11 @@
-import { Response, Request, NextFunction } from "express";
-import { createResidentSchema } from "./dtos/create-resident.dto";
-import * as ResidentService from "./resident.service";
-import { BadRequestError, NotFoundError, InternalServerError } from "../types/error.type";
-import { AppDataSource } from "../config/data-source";
-import { User } from "../entities/user.entity";
 import path from 'path';
 import fs from 'fs';
+import { Response, Request, NextFunction } from 'express';
+import { createResidentSchema } from './dtos/create-resident.dto';
+import * as ResidentService from './resident.service';
+import { BadRequestError, NotFoundError, InternalServerError } from '../types/error.type';
+import { AppDataSource } from '../config/data-source';
+import { User } from '../entities/user.entity';
 
 /**
  * 개별 입주민 등록
@@ -15,20 +15,20 @@ export const createResident = async (req: Request, res: Response, next: NextFunc
     const parseResult = createResidentSchema.safeParse(req.body);
 
     if (!parseResult.success) {
-      return next(new BadRequestError('입주민 등록 요청 데이터가 유효하지 않습니다.'));
+      throw new BadRequestError('입주민 등록 요청 데이터가 유효하지 않습니다.');
     }
 
     const adminUser = req.user as User;
 
     if (!adminUser?.apartment) {
-      return next(new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.'));
+      throw new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.');
     }
 
     const residentDto = await ResidentService.createResident(parseResult.data, adminUser.apartment);
 
     return res.status(201).json(residentDto);
   } catch (error: unknown) {
-    return next(new InternalServerError('입주민 등록 중 문제가 발생했습니다.'));
+    return next(error);
   }
 };
 
@@ -41,17 +41,17 @@ export const createResidentFromUser = async (req: Request, res: Response, next: 
     const { apartmentDong, apartmentHo } = req.body;
 
     if (!userId) {
-      return next(new BadRequestError('userId가 전달되지 않았습니다.'));
+      throw new BadRequestError('userId가 전달되지 않았습니다.');
     }
 
     if (!apartmentDong || !apartmentHo) {
-      return next(new BadRequestError('아파트 동과 호수는 필수 입력값입니다.'));
+      throw new BadRequestError('아파트 동과 호수는 필수 입력값입니다.');
     }
 
     const adminUser = req.user as User;
 
     if (!adminUser?.apartment) {
-      return next(new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.'));
+      throw new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.');
     }
 
     const userRepository = AppDataSource.getRepository(User);
@@ -60,7 +60,7 @@ export const createResidentFromUser = async (req: Request, res: Response, next: 
     });
 
     if (!user) {
-      return next(new NotFoundError('해당 사용자 정보를 찾을 수 없습니다.'));
+      throw new NotFoundError('해당 사용자 정보를 찾을 수 없습니다.');
     }
 
     const residentDto = await ResidentService.createResidentFromUser(
@@ -72,7 +72,7 @@ export const createResidentFromUser = async (req: Request, res: Response, next: 
 
     return res.status(200).json(residentDto);
   } catch (error: unknown) {
-    return next(new InternalServerError('입주민 등록 중 문제가 발생했습니다.'));
+    return next(error);
   }
 };
 
@@ -84,7 +84,7 @@ export const downloadResidentTemplate = async (_req: Request, res: Response, nex
     const filePath = path.join(__dirname, '..', 'resident', 'assets', 'residents-template.csv');
 
     if (!fs.existsSync(filePath)) {
-      return next(new InternalServerError('템플릿 파일이 존재하지 않습니다.'));
+      throw new InternalServerError('템플릿 파일이 존재하지 않습니다.');
     }
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
@@ -96,7 +96,7 @@ export const downloadResidentTemplate = async (_req: Request, res: Response, nex
     const fileStream = fs.createReadStream(filePath);
     return fileStream.pipe(res);
   } catch (error: unknown) {
-    return next(new InternalServerError('템플릿 다운로드 중 문제가 발생했습니다.'));
+    return next(error);
   }
 };
 
@@ -108,13 +108,13 @@ export const uploadResidentsFromFile = async (req: Request, res: Response, next:
     const file = req.file;
 
     if (!file) {
-      return next(new BadRequestError('CSV 파일이 필요합니다.'));
+      throw new BadRequestError('CSV 파일이 필요합니다.');
     }
 
     const adminUser = req.user as User;
 
     if (!adminUser?.apartment) {
-      return next(new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.'));
+      throw new BadRequestError('관리자 계정에 연결된 아파트 정보가 없습니다.');
     }
 
     const { count } = await ResidentService.registerResidentsFromCsv(file.buffer, adminUser.apartment);
@@ -124,6 +124,6 @@ export const uploadResidentsFromFile = async (req: Request, res: Response, next:
       count,
     });
   } catch (error: unknown) {
-    return next(new InternalServerError('CSV 파일 등록 중 문제가 발생했습니다.'));
+    return next(error);
   }
 };
