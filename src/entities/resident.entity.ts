@@ -23,7 +23,7 @@ export enum HouseholdType {
   MEMBER = 'MEMBER',
 }
 
-@Entity('Resident')
+@Entity('resident')
 export class Resident {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
