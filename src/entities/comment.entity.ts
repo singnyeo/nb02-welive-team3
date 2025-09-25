@@ -40,7 +40,7 @@ export class Comment {
   boardType!: BoardType;
 
   @Column({ type: "uuid" })
-  boardId!: string; // complaintId | noticeId
+  boardId!: string; // complaintId | noticeId | pollId
 
   // 민원
   @ManyToOne(() => Complaint, (complaint) => complaint.comments, { nullable: true, onDelete: "CASCADE" })
