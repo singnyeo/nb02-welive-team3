@@ -9,7 +9,7 @@ export const CreatePollDtoSchema = z.object({
   status: z.enum(["IN_PROGRESS", "PENDING", "CLOSED"]),
   title: z.string().min(1, "제목을 입력해주세요"),
   content: z.string().min(1, "내용을 입력해주세요"),
-  buildingPermission: z.string().optional(),
+  buildingPermission: z.number().optional(),
   startDate: dateTimeSchema,
   endDate: dateTimeSchema,
   options: z

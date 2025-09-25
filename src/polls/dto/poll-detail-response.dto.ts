@@ -5,7 +5,7 @@ export interface PollDetailResponseDto {
   userId: string;
   title: string;
   writerName: string;
-  buildingPermission?: string;
+  buildingPermission?: number;
   createdAt: string;
   updatedAt: string;
   startDate: string;

@@ -36,8 +36,8 @@ export class Poll {
   @Column()
   writerName!: string;
 
-  @Column({ nullable: true })
-  buildingPermission?: string;
+  @Column({ type: "int", nullable: true })
+  buildingPermission?: number;
 
   @Column("timestamp")
   startDate!: Date;
