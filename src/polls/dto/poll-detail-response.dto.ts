@@ -10,7 +10,7 @@ export interface PollDetailResponseDto {
   updatedAt: string;
   startDate: string;
   endDate: string;
-  status: "IN_PROGRESS" | "PENDING" | "COMPLETED";
+  status: "IN_PROGRESS" | "PENDING" | "CLOSED";
   content: string;
   boardName: string;
   options: OptionResponse[];
