@@ -1,8 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToMany,
+  OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { User } from './user.entity';
 import { NoticeBoard } from './notice-board.entity';
 import { ComplaintBoard } from './complaint-board.entity';
 import { PollBoard } from './poll-board.entity';
+import { Resident } from './resident.entity';
 
 // =
 // : 아파트
@@ -65,9 +75,9 @@ export class Apartment {
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'adminId' })
-  admin!: User;
+  // 아파트 관리자는 한 명으로 추측
+  // @OneToMany(() => User, (user) => user.apartment)
+  // admins!: User[];
 
   @Column()
   adminId!: string;
@@ -80,4 +90,16 @@ export class Apartment {
 
   @OneToOne(() => PollBoard, (pollBoard) => pollBoard.apartment)
   pollBoard!: PollBoard;
+
+  @OneToMany(() => Resident, (resident) => resident.apartment)
+  residents!: Resident[];
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
 }

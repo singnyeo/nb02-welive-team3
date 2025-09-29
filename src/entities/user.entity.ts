@@ -1,7 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, JoinColumn, OneToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  OneToMany,
+  JoinColumn,
+  OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
+import { Vote } from './vote.entity';
+import { Poll } from './poll.entity';
+import { UserNotification } from './user-notification.entity';
 
 // =
 // : 사용자
@@ -37,7 +51,7 @@ export class User {
   @Column()
   email!: string;
 
-  @Column()
+  @Column({ unique: true })
   contact!: string;
 
   @Column({ nullable: true })
@@ -63,14 +77,14 @@ export class User {
   @JoinColumn({ name: 'apartmentId' })
   apartment?: Apartment;
 
-  @Column()
-  apartmentId!: string;
+  @Column({ nullable: true })
+  apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  // @OneToMany(() => Notice, (notice) => notice.user)
-  // notices!: Notice[];
+  //@OneToMany(() => Notice, (notice) => notice.user)
+  //notices!: Notice[];
 
   // @OneToMany(() => Poll, (poll) => poll.user)
   // polls!: Poll[];
@@ -78,6 +92,23 @@ export class User {
   // @OneToMany(() => Vote, (vote) => vote.user)
   // votes!: Vote[];
 
-  // @OneToMany(() => Comment, (comment) => comment.user)
-  // comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+
+  apartmentId!: string;
+
+  @OneToMany(() => Complaint, (complaint) => complaint.user)
+  complaints!: Complaint[];
+  
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt?: Date;
+
+  @Column({ nullable: true })
+  lastLoginAt?: Date;
+
+  @Column({ nullable: true })
+  refreshToken?: string;
 }
