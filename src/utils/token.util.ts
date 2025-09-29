@@ -6,26 +6,14 @@ import env from '../config/env';
 
 // ACCESS_TOKEN 생성
 export const generateAccessToken = (payload: Payload): string => {
-<<<<<<< HEAD
   const expiresIn = env.JWT_ACCESS_EXPIRATION;
   return jwt.sign(payload, env.JWT_ACCESS_SECRET, { expiresIn });
-=======
-  const { _iat, _exp, ...other } = payload;
-  const expiresIn = env.JWT_ACCESS_EXPIRATION;
-  return jwt.sign(other, env.JWT_ACCESS_SECRET, { expiresIn });
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 };
 
 // REFRESH_TOKEN 생성
 export const generateRefreshToken = (payload: Payload): string => {
-<<<<<<< HEAD
   const expiresIn = env.JWT_REFRESH_EXPIRATION;
   return jwt.sign(payload, env.JWT_REFRESH_SECRET, { expiresIn });
-=======
-  const { _iat, _exp, ...other } = payload;
-  const expiresIn = env.JWT_REFRESH_EXPIRATION;
-  return jwt.sign(other, env.JWT_REFRESH_SECRET, { expiresIn });
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 };
 
 // ACCESS_TOKEN 검증
