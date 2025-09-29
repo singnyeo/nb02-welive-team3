@@ -1,5 +1,4 @@
 import { z } from 'zod';
-<<<<<<< HEAD
 import { JoinStatus, UserRole } from '../entities/user.entity';
 
 // =============================
@@ -229,71 +228,4 @@ export const CleanupRequestSchema = z.object({});
 
 export const CleanupResponseSchema = z.object({
   message: message,
-=======
-
-const RoleEnum = z.enum(['USER', 'ADMIN', 'SUPER_ADMIN']);
-const JoinStatusEnum = z.enum(['PENDING', 'APPROVED', 'REJECTED']);
-
-export const SignupRequestSchema = z.object({
-  body: SignupRequestBodySchema,
-});
-
-export const SignupResponseSchema = z.object({
-  id: id,
-  name: name,
-  email: email,
-  role: role,
-  joinStatus: joinStatus,
-  isActive: isActive,
-});
-
-export const SignupAdminRequestBodySchema = z.object({
-  username: username,
-  password: password,
-  passwordConfirm: password,
-  contact: contact,
-  name: name,
-  email: email,
-  role: role.default(UserRole.ADMIN),
-  description: description,
-  startComplexNumber: startComplexNumber,
-  endComplexNumber: endComplexNumber,
-  startDongNumber: startDongNumber,
-  endDongNumber: endDongNumber,
-  startFloorNumber: startFloorNumber,
-  endFloorNumber: endFloorNumber,
-  startHoNumber: startHoNumber,
-  endHoNumber: endHoNumber,
-  apartmentName: apartmentName,
-  apartmentAddress: apartmentAddress,
-  apartmentManagementNumber: apartmentManagementNumber,
-});
-
-export const SignupAdminResponseSchema = z.object({
-  id: id,
-  name: name,
-  email: email,
-  role: role,
-  joinStatus: joinStatus,
-  isActive: isActive,
-});
-
-export const SignupSuperAdminRequestBodySchema = z.object({
-  username: username,
-  password: password,
-  contact: contact,
-  name: name,
-  email: email,
-  role: role.default(UserRole.SUPER_ADMIN),
-  joinStatus: joinStatus.default(JoinStatus.APPROVED),
-});
-
-export const SignupSuperAdminRequestSchema = z.object({
-  username: z.string().min(3).max(128),
-  password: z.string().min(8).max(128),
-  contact: z.string().min(10).max(11),
-  name: z.string().min(1).max(32),
-  email: z.email().min(5).max(254),
-  role: RoleEnum.default('SUPER_ADMIN'),
->>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
 });

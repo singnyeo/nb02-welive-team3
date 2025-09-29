@@ -13,7 +13,6 @@ import { NoticeBoard } from './notice-board.entity';
 import { ComplaintBoard } from './complaint-board.entity';
 import { PollBoard } from './poll-board.entity';
 import { Resident } from './resident.entity';
-import { Resident } from './resident.entity';
 
 // =
 // : 아파트
@@ -76,43 +75,9 @@ export class Apartment {
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  @OneToMany(() => User, (user) => user.apartment)
-  admins!: User[];
-=======
   // 아파트 관리자는 한 명으로 추측
   // @OneToMany(() => User, (user) => user.apartment)
   // admins!: User[];
-
-  @Column()
-  adminId!: string;
->>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
-
-  @OneToOne(() => NoticeBoard, (noticeBoard) => noticeBoard.apartment)
-  noticeBoard!: NoticeBoard;
-
-  @OneToOne(() => ComplaintBoard, (complaintBoard) => complaintBoard.apartment)
-  complaintBoard!: ComplaintBoard;
-
-  @OneToOne(() => PollBoard, (pollBoard) => pollBoard.apartment)
-  pollBoard!: PollBoard;
-
-  @OneToMany(() => Resident, (resident) => resident.apartment)
-  residents!: Resident[];
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
-
-  @DeleteDateColumn({ nullable: true })
-  deletedAt?: Date;
-=======
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'adminId' })
-  admin!: User;
 
   @Column()
   adminId!: string;
