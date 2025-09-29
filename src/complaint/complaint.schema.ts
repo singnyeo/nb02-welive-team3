@@ -17,3 +17,8 @@ export const updateComplaintSchema = z.object({
 export const updateComplaintStatusSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "RESOLVED"]),
 });
+
+// 타입 추출
+export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
+export type UpdateComplaintInput = z.infer<typeof updateComplaintSchema>;
+export type UpdateComplaintStatusInput = z.infer<typeof updateComplaintStatusSchema>;
