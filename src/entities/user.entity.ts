@@ -48,10 +48,14 @@ export class User {
   @Column()
   name!: string;
 
-  @Column()
+  @Column({ unique: true })
   email!: string;
 
+<<<<<<< HEAD
   @Column({ unique: true })
+=======
+  @Column()
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
   contact!: string;
 
   @Column({ nullable: true })
@@ -77,29 +81,45 @@ export class User {
   @JoinColumn({ name: 'apartmentId' })
   apartment?: Apartment;
 
+<<<<<<< HEAD
+  @Column()
+<<<<<<< HEAD
+=======
   @Column({ nullable: true })
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
   apartmentId?: string;
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  //@OneToMany(() => Notice, (notice) => notice.user)
-  //notices!: Notice[];
+  @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[];
 
-  // @OneToMany(() => Poll, (poll) => poll.user)
-  // polls!: Poll[];
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
 
-  // @OneToMany(() => Vote, (vote) => vote.user)
-  // votes!: Vote[];
+  @OneToMany(() => Vote, (vote) => vote.user)
+  votes!: Vote[];
 
+<<<<<<< HEAD
+<<<<<<< HEAD
   @OneToMany(() => Comment, (comment) => comment.user)
   comments!: Comment[];
-
+=======
   apartmentId!: string;
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
+=======
+  //   @OneToMany(() => Comment, (comment) => comment.user)
+  //   comments!: Comment[];
+
+  @OneToMany(() => UserNotification, (userNotification) => userNotification.user)
+  userNotifications!: UserNotification[];
+>>>>>>> 7eee585 (feat: 아파트 API 기능 추가)
 
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
-  
+
+<<<<<<< HEAD
   @UpdateDateColumn()
   updatedAt!: Date;
 
@@ -111,4 +131,18 @@ export class User {
 
   @Column({ nullable: true })
   refreshToken?: string;
+=======
+  @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[];
+
+  @OneToMany(() => Poll, (poll) => poll.user)
+  polls!: Poll[];
+
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
+>>>>>>> 5a8d463 (feat: User,Apartment,PollBoard,NoticeBoard,ComplaintBoard 엔티티 초안 작성)
+=======
+  // @OneToMany(() => Comment, (comment) => comment.user)
+  // comments!: Comment[];
+>>>>>>> b9332bc (fix: 정의 되지 않은 관계성 임의 주석 처리)
 }

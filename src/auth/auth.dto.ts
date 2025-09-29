@@ -250,6 +250,7 @@ export const SignupResponseSchema = z.object({
 export const SignupAdminRequestBodySchema = z.object({
   username: username,
   password: password,
+  passwordConfirm: password,
   contact: contact,
   name: name,
   email: email,
@@ -266,10 +267,6 @@ export const SignupAdminRequestBodySchema = z.object({
   apartmentName: apartmentName,
   apartmentAddress: apartmentAddress,
   apartmentManagementNumber: apartmentManagementNumber,
-});
-
-export const SignupAdminRequestSchema = z.object({
-  body: SignupAdminRequestBodySchema,
 });
 
 export const SignupAdminResponseSchema = z.object({

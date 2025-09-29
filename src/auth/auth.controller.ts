@@ -1,4 +1,39 @@
 import { RequestHandler } from 'express';
+import {
+  LoginRequestSchema,
+  LoginResponseSchema,
+  LogoutRequestSchema,
+  RefreshRequestSchema,
+  RefreshResponseSchema,
+  SignupAdminRequestBodySchema,
+  SignupAdminResponseSchema,
+  SignupRequestSchema,
+  SignupResponseSchema,
+  SignupSuperAdminRequestSchema,
+  SignupSuperAdminResponseSchema,
+} from './auth.dto';
+import { BadRequestError, UnauthorizedError } from '../types/error.type';
+import {
+  addRefreshToken,
+  login,
+  logout,
+  refresh,
+  removeRefreshToken,
+  signup,
+  signupAdmin,
+  signupSuperAdmin,
+} from './auth.service';
+import z from 'zod';
+import {
+  deleteAccessToken,
+  deleteRefreshToken,
+  generateAccessToken,
+  generateRefreshToken,
+  getRefreshToken,
+  setAccessToken,
+  setRefreshToken,
+} from '../utils/token.util';
+import { Payload } from '../types/payload.type';
 <<<<<<< HEAD
 import {
   LoginRequestSchema,
@@ -221,12 +256,15 @@ export const handleSignup: RequestHandler = async (req, res) => {
 };
 
 export const handleSignupAdmin: RequestHandler = async (req, res) => {
-  const result = SignupAdminRequestSchema.safeParse(req);
-  if (!result.success) {
+  const body = SignupAdminRequestBodySchema.safeParse(req.body);
+  if (!body.success) {
+    console.error(body.error.format());
     return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
   }
 
-  const signedupUser = await signupAdmin(result.data.body);
+  console.log(body);
+
+  const signedupUser = await signupAdmin(body.data);
 
   const response: z.infer<typeof SignupAdminResponseSchema> = {
     id: signedupUser.id,
@@ -236,6 +274,7 @@ export const handleSignupAdmin: RequestHandler = async (req, res) => {
     joinStatus: signedupUser.joinStatus,
     isActive: signedupUser.isActive,
   };
+  console.log('Admin signed up:', response);
   res.status(201).json(response);
 };
 
