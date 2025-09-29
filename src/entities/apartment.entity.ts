@@ -1,5 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToMany, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColumn, OneToOne } from 'typeorm';
 import { User } from './user.entity';
+import { NoticeBoard } from './notice-board.entity';
+import { ComplaintBoard } from './complaint-board.entity';
+import { PollBoard } from './poll-board.entity';
+
+// =
+// : 아파트
+// =
+
+export enum ApartmentStatus {
+  PENDING = 'PENDING',
+  APPROVED = 'APPROVED',
+  REJECTED = 'REJECTED',
+}
 
 @Entity('apartments')
 export class Apartment {
@@ -7,50 +20,64 @@ export class Apartment {
   id!: string;
 
   @Column()
-  apartmentName!: string;
+  name!: string;
 
   @Column()
-  apartmentAddress!: string;
+  address!: string;
 
-  @Column({ unique: true })
-  apartmentManagementNumber!: string;
+  @Column()
+  officeNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   description!: string;
 
-  @Column({ nullable: true })
+  @Column()
   startComplexNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   endComplexNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   startDongNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   endDongNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   startFloorNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   endFloorNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   startHoNumber!: string;
 
-  @Column({ nullable: true })
+  @Column()
   endHoNumber!: string;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  imageUrl?: string | null;
+  @Column({
+    type: 'enum',
+    enum: ApartmentStatus,
+    default: ApartmentStatus.PENDING,
+  })
+  apartmentStatus!: ApartmentStatus;
 
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
 
-  @CreateDateColumn()
-  createdAt!: Date;
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'adminId' })
+  admin!: User;
 
-  @UpdateDateColumn()
-  updatedAt!: Date;
+  @Column()
+  adminId!: string;
+
+  @OneToOne(() => NoticeBoard, (noticeBoard) => noticeBoard.apartment)
+  noticeBoard!: NoticeBoard;
+
+  @OneToOne(() => ComplaintBoard, (complaintBoard) => complaintBoard.apartment)
+  complaintBoard!: ComplaintBoard;
+
+  @OneToOne(() => PollBoard, (pollBoard) => pollBoard.apartment)
+  pollBoard!: PollBoard;
 }
