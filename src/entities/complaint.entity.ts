@@ -40,12 +40,6 @@ export class Complaint {
     nullable: true,
     onDelete: "SET NULL",
   })
-  
-  @JoinColumn({ name: "board_id" })
-  complaintBoard!: ComplaintBoard | null;
-
-  @Column({ type: "uuid", nullable: true })
-  boardId!: string | null;
 
   @Column({ length: 100 })
   title!: string;
@@ -75,8 +69,8 @@ export class Complaint {
   @Column({ nullable: true })
   ho!: string;
 
-  // @OneToMany(() => Comment, (comment) => comment.complaint)
-  // comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.complaint)
+  comments!: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
