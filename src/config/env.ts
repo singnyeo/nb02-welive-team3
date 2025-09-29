@@ -13,13 +13,16 @@ interface Env {
   DB_USERNAME: string;
   DB_PASSWORD: string;
   DB_NAME: string;
-  DB_URL: string; // 조합된 connection string
+  DB_URL: string;
 
   // JWT
   JWT_ACCESS_SECRET: string;
   JWT_REFRESH_SECRET: string;
-  JWT_ACCESS_EXPIRATION: string;
-  JWT_REFRESH_EXPIRATION: string;
+  JWT_ACCESS_EXPIRATION: number;
+  JWT_REFRESH_EXPIRATION: number;
+
+  // CORS
+  CORS_ORIGIN: string;
 }
 
 const env: Env = {
@@ -40,8 +43,11 @@ const env: Env = {
   // JWT
   JWT_ACCESS_SECRET: process.env.JWT_ACCESS_SECRET || '',
   JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET || '',
-  JWT_ACCESS_EXPIRATION: process.env.JWT_ACCESS_EXPIRATION || '15m',
-  JWT_REFRESH_EXPIRATION: process.env.JWT_REFRESH_EXPIRATION || '1d',
+  JWT_ACCESS_EXPIRATION: parseInt(process.env.JWT_ACCESS_EXPIRATION || '900000', 10),
+  JWT_REFRESH_EXPIRATION: parseInt(process.env.JWT_REFRESH_EXPIRATION || '86400000', 10),
+
+  // CORS
+  CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
 };
 
 if (!env.DB_HOST) throw new Error('Missing DB_HOST in environment variables');
@@ -50,5 +56,6 @@ if (!env.DB_PASSWORD) throw new Error('Missing DB_PASSWORD in environment variab
 if (!env.DB_NAME) throw new Error('Missing DB_NAME in environment variables');
 if (!env.JWT_ACCESS_SECRET) throw new Error('Missing JWT_ACCESS_SECRET in environment variables');
 if (!env.JWT_REFRESH_SECRET) throw new Error('Missing JWT_REFRESH_SECRET in environment variables');
+if (!env.CORS_ORIGIN) throw new Error('Missing CORS_ORIGIN in environment variables');
 
 export default env;
