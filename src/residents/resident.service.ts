@@ -1,32 +1,40 @@
-import { AppDataSource } from "../config/data-source";
-import { CreateResidentDto, ResidentResponseDto } from "./dtos/create-resident.dto";
-import { Resident, HouseholdType, ResidentStatus } from "../entities/resident.entity";
-import { User } from "../entities/user.entity";
-import { ConflictError, NotFoundError } from "../types/error.type";
+import { AppDataSource } from '../config/data-source';
+import { CreateResidentDto, ResidentResponseDto, ResidentResponseSchema } from './dtos/create-resident.dto';
+import { Resident, HouseholdType, ResidentStatus } from '../entities/resident.entity';
+import { User } from '../entities/user.entity';
+import { ConflictError, NotFoundError } from '../types/error.type';
+import { Apartment } from '../entities/apartment.entity';
+import { parseCsvBuffer } from './resident-csv.util';
 
 /**
  * 개별 등록용
  */
-export const createResident = async (dto: CreateResidentDto): Promise<ResidentResponseDto> => {
+export const createResident = async (
+  dto: CreateResidentDto,
+  apartment: Apartment
+): Promise<ResidentResponseDto> => {
   const residentRepository = AppDataSource.getRepository(Resident);
 
-  const existingResident = await residentRepository.findOneBy({
-    building: dto.building,
-    unitNumber: dto.unitNumber,
-    name: dto.name,
-    contact: dto.contact,
+  const existingResident = await residentRepository.findOne({
+    where: {
+      building: dto.building,
+      unitNumber: dto.unitNumber,
+      name: dto.name,
+      apartment: { id: apartment.id },
+    },
   });
 
   if (existingResident) {
     throw new ConflictError('이미 등록된 입주민입니다.');
   }
 
-  const resident = residentRepository.create(dto);
+  const resident = residentRepository.create({
+    ...dto,
+    apartment,
+  });
 
-  // resident 엔티티를 먼저 저장
   const saved = await residentRepository.save(resident);
 
-  // 저장된 엔티티의 ID를 이용해 user 관계를 포함한 전체 정보를 조회
   const fullResident = await residentRepository.findOne({
     where: { id: saved.id },
     relations: ['user'],
@@ -36,7 +44,7 @@ export const createResident = async (dto: CreateResidentDto): Promise<ResidentRe
     throw new NotFoundError('입주민 정보 조회에 실패했습니다.');
   }
 
-  const responseData: ResidentResponseDto = {
+  return ResidentResponseSchema.parse({
     id: fullResident.id,
     userId: fullResident.user?.id ?? null,
     building: fullResident.building,
@@ -48,9 +56,7 @@ export const createResident = async (dto: CreateResidentDto): Promise<ResidentRe
     isHouseholder: fullResident.isHouseholder,
     isRegistered: fullResident.isRegistered,
     approvalStatus: fullResident.user?.joinStatus ?? 'PENDING',
-  };
-
-  return responseData;
+  });
 };
 
 /**
@@ -59,17 +65,17 @@ export const createResident = async (dto: CreateResidentDto): Promise<ResidentRe
 export const createResidentFromUser = async (
   user: User,
   apartmentDong: string,
-  apartmentHo: string
+  apartmentHo: string,
+  apartment: Apartment
 ): Promise<ResidentResponseDto> => {
   const residentRepository = AppDataSource.getRepository(Resident);
 
-  // 동일 정보로 등록된 resident가 있는 경우 → 연결
   const existingResident = await residentRepository.findOne({
     where: {
       name: user.name,
-      contact: user.contact,
       building: apartmentDong,
       unitNumber: apartmentHo,
+      apartment: { id: apartment.id },
     },
     relations: ['user'],
   });
@@ -79,7 +85,7 @@ export const createResidentFromUser = async (
     existingResident.isRegistered = true;
     const updatedResident = await residentRepository.save(existingResident);
 
-    const responseData: ResidentResponseDto = {
+    return {
       id: updatedResident.id,
       userId: updatedResident.user?.id ?? null,
       building: updatedResident.building,
@@ -92,10 +98,8 @@ export const createResidentFromUser = async (
       isRegistered: updatedResident.isRegistered,
       approvalStatus: updatedResident.user?.joinStatus ?? 'PENDING',
     };
-    return responseData;
   }
 
-  // 없으면 새로 생성
   const newResident = residentRepository.create({
     name: user.name,
     contact: user.contact,
@@ -105,11 +109,12 @@ export const createResidentFromUser = async (
     residentStatus: ResidentStatus.RESIDENCE,
     isRegistered: true,
     user,
+    apartment,
   });
 
   const savedResident = await residentRepository.save(newResident);
 
-  const responseData: ResidentResponseDto = {
+  return {
     id: savedResident.id,
     userId: savedResident.user?.id ?? null,
     building: savedResident.building,
@@ -122,5 +127,42 @@ export const createResidentFromUser = async (
     isRegistered: savedResident.isRegistered,
     approvalStatus: savedResident.user?.joinStatus ?? 'PENDING',
   };
-  return responseData;
+};
+
+/**
+ *  입주민 명부 csv 파일 업로드
+ */
+
+export const registerResidentsFromCsv = async (
+  buffer: Buffer,
+  apartment: Apartment
+): Promise<{ count: number }> => {
+  const parsedRows = await parseCsvBuffer(buffer);
+
+  const repository = AppDataSource.getRepository(Resident);
+
+  let count = 0;
+
+  for (const row of parsedRows) {
+    const existing = await repository.findOne({
+      where: {
+        building: row.building,
+        unitNumber: row.unitNumber,
+        name: row.name,
+        apartment: { id: apartment.id }
+      }
+    });
+
+    if (!existing) {
+      const resident = repository.create({
+        ...row,
+        apartment,
+        isRegistered: false,
+        residentStatus: ResidentStatus.RESIDENCE
+      });
+      await repository.save(resident);
+      count++;
+    }
+  }
+  return { count };
 };

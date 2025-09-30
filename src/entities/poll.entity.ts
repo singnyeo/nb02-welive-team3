@@ -7,21 +7,21 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
-} from 'typeorm';
-import { PollOption } from './poll-option.entity';
-import { User } from './user.entity';
-import { Notification } from './notification.entity';
+} from "typeorm";
+import { PollOption } from "./poll-option.entity";
+import { User } from "./user.entity";
+import { Notification } from "./notification.entity";
 
-@Entity('polls')
+@Entity("polls")
 export class Poll {
-  @PrimaryGeneratedColumn('uuid')
+  @PrimaryGeneratedColumn("uuid")
   pollId!: string;
 
   @Column()
   boardId!: string;
 
   @ManyToOne(() => User, (user) => user.polls)
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: "userId" })
   user!: User;
 
   @Column()
@@ -30,27 +30,27 @@ export class Poll {
   @Column()
   title!: string;
 
-  @Column('text')
+  @Column("text")
   content!: string;
 
   @Column()
   writerName!: string;
 
-  @Column({ nullable: true })
-  buildingPermission?: string;
+  @Column({ type: "int", nullable: true })
+  buildingPermission?: number;
 
-  @Column('timestamp')
+  @Column("timestamp")
   startDate!: Date;
 
-  @Column('timestamp')
+  @Column("timestamp")
   endDate!: Date;
 
   @Column({
-    type: 'enum',
-    enum: ['IN_PROGRESS', 'PENDING', 'COMPLETED'],
-    default: 'PENDING',
+    type: "enum",
+    enum: ["IN_PROGRESS", "PENDING", "CLOSED"],
+    default: "PENDING",
   })
-  status!: 'IN_PROGRESS' | 'PENDING' | 'COMPLETED';
+  status!: "IN_PROGRESS" | "PENDING" | "CLOSED";
 
   @CreateDateColumn()
   createdAt!: Date;
