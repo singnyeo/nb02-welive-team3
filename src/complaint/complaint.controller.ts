@@ -8,8 +8,8 @@ import {
 
 export const handleCreateComplaint = async (req: Request, res: Response) => {
   const data = createComplaintSchema.parse(req.body);
-  const complaint = await service.createComplaintService(data);
-  res.status(201).json({ message: "정상적으로 등록 처리되었습니다", complaint });
+  await service.createComplaintService(data);
+  res.status(201).json({ message: "정상적으로 등록 처리되었습니다" });
 };
 
 export const handleGetComplaints = async (req: Request, res: Response) => {

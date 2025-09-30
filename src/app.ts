@@ -8,6 +8,7 @@ import auth from './auth/auth.router';
 import resident from './residents/resident.router';
 import apartments from './apartments/apartments.router';
 import env from './config/env';
+import complaint from './complaint/complaint.router'
 import notifications from './notofications/notifications.router';
 
 const app: Application = express();
@@ -27,6 +28,7 @@ app.use('/api', root);
 app.use('/api/auth', auth);
 app.use('/api/residents', resident);
 app.use('/api/apartments', apartments);
+app.use('/api/complaints', complaint);
 app.use('/api/notifications', notifications);
 
 app.use(notFoundHandler);
