@@ -8,14 +8,16 @@ import {
   InternalServerError,
   NotFoundError,
 } from "../types/error.type";
+import { User } from "../entities/user.entity";
+import { Apartment } from "../entities/apartment.entity";
 
 // ============================
 // : REPOSITORIES
 // ============================
-const userRepository = AppDataSource.getRepository("User");
-const pollRepository = AppDataSource.getRepository("Poll");
-const pollOptionRepository = AppDataSource.getRepository("PollOption");
-const apartmentRepository = AppDataSource.getRepository("Apartment");
+const userRepository = AppDataSource.getRepository(User);
+const pollRepository = AppDataSource.getRepository(Poll);
+const pollOptionRepository = AppDataSource.getRepository(PollOption);
+const apartmentRepository = AppDataSource.getRepository(Apartment);
 
 // ============================
 // : SERVICE FUNCTIONS
