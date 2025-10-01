@@ -9,7 +9,7 @@ import resident from './residents/resident.router';
 import apartments from './apartments/apartments.router';
 import env from './config/env';
 import complaint from './complaint/complaint.router'
-import notifications from './notofications/notifications.router';
+import notifications from './notifications/notifications.router';
 
 const app: Application = express();
 
