@@ -13,6 +13,7 @@ import {
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
+import { Comment } from './comment.entity';
 import { Vote } from './vote.entity';
 import { Poll } from './poll.entity';
 import { UserNotification } from './user-notification.entity';
@@ -92,8 +93,8 @@ export class User {
   @OneToMany(() => Vote, (vote) => vote.user)
   votes!: Vote[];
 
-  //   @OneToMany(() => Comment, (comment) => comment.user)
-  //   comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
 
   @OneToMany(() => UserNotification, (userNotification) => userNotification.user)
   userNotifications!: UserNotification[];
