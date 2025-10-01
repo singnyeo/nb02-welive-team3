@@ -7,10 +7,11 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-} from "typeorm";
-import { User } from "./user.entity";
-import { ComplaintBoard } from "./complaint-board.entity";
-import { Comment } from "./comment.entity";
+} from 'typeorm';
+import { User } from './user.entity';
+import { ComplaintBoard } from './complaint-board.entity';
+import { Comment } from './comment.entity';
+import { Notification } from './notification.entity';
 
 export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
 
@@ -36,11 +37,6 @@ export class Complaint {
   @Column({ type: 'uuid', nullable: true })
   boardId!: string | null;
 
-  @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
-    nullable: true,
-    onDelete: "SET NULL",
-  })
-
   @Column({ length: 100 })
   title!: string;
 
@@ -64,20 +60,20 @@ export class Complaint {
   commentsCount!: number;
 
   @Column({ nullable: true })
-  dong!: string;
+  dong?: string;
 
   @Column({ nullable: true })
-  ho!: string;
+  ho?: string;
 
   @OneToMany(() => Comment, (comment) => comment.complaint)
   comments!: Comment[];
+
+  @OneToMany(() => Notification, (notification) => notification.complaint)
+  notifications!: Notification[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt!: Date;
-
-  @OneToMany(() => Notification, (notification) => notification.complaint)
-  notifications!: Notification[];
 }
