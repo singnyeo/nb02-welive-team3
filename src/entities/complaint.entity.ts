@@ -5,14 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  // OneToMany,
-  JoinColumn,
   OneToMany,
-} from 'typeorm';
-import { User } from './user.entity';
-import { ComplaintBoard } from './complaint-board.entity';
-import { Notification } from './notification.entity';
-// import { Comment } from "./comment.entity";
+  JoinColumn,
+} from "typeorm";
+import { User } from "./user.entity";
+import { ComplaintBoard } from "./complaint-board.entity";
+import { Comment } from "./comment.entity";
 
 export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
 
@@ -37,6 +35,11 @@ export class Complaint {
 
   @Column({ type: 'uuid', nullable: true })
   boardId!: string | null;
+
+  @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
+    nullable: true,
+    onDelete: "SET NULL",
+  })
 
   @Column({ length: 100 })
   title!: string;
@@ -66,8 +69,8 @@ export class Complaint {
   @Column({ nullable: true })
   ho!: string;
 
-  // @OneToMany(() => Comment, (comment) => comment.complaint)
-  // comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.complaint)
+  comments!: Comment[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;
