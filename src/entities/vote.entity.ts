@@ -8,7 +8,6 @@ import {
   Index,
 } from "typeorm";
 import { PollOption } from "./poll-option.entity";
-import { Poll } from "./poll.entity";
 import { User } from "./user.entity";
 
 @Entity("votes")
@@ -24,22 +23,18 @@ export class Vote {
   @Column()
   userId!: string;
 
-  @ManyToOne(() => Poll)
-  @JoinColumn({ name: "pollId" })
-  poll!: Poll;
-
-  @Column({ type: "uuid" })
-  pollId!: string; // 중복 투표 방지를 위한 pollId
-
-  @ManyToOne(() => PollOption, (option) => option.voteRecords, {
+  @ManyToOne(() => PollOption, (option) => option.votes, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "optionId" })
   option!: PollOption;
 
-  @Column({ type: "uuid" })
+  @Column()
   optionId!: string;
 
+  @Column()
+  pollId!: string; // 중복 투표 방지를 위한 pollId 추가
+
   @CreateDateColumn()
-  votedAt!: Date;
+  createdAt!: Date;
 }
