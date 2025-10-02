@@ -8,20 +8,6 @@ import {
   InternalServerError,
   NotFoundError,
 } from "../types/error.type";
-import { User } from "../entities/user.entity";
-import { Apartment } from "../entities/apartment.entity";
-
-// ============================
-// : REPOSITORIES
-// ============================
-const userRepository = AppDataSource.getRepository(User);
-const pollRepository = AppDataSource.getRepository(Poll);
-const pollOptionRepository = AppDataSource.getRepository(PollOption);
-const apartmentRepository = AppDataSource.getRepository(Apartment);
-
-// ============================
-// : SERVICE FUNCTIONS
-// ============================
 
 /**
  * 투표 생성
@@ -30,6 +16,12 @@ export const createPoll = async (
   userId: string,
   data: CreatePollDto
 ): Promise<Poll> => {
+  // Repository를 함수 내부에서 가져오기
+  const userRepository = AppDataSource.getRepository("User");
+  const pollRepository = AppDataSource.getRepository("Poll");
+  const pollOptionRepository = AppDataSource.getRepository("PollOption");
+  const apartmentRepository = AppDataSource.getRepository("Apartment");
+
   // 사용자 정보 조회 (apartment, pollBoard 정보 포함)
   const user = await userRepository.findOne({
     where: { id: userId },
@@ -52,7 +44,7 @@ export const createPoll = async (
     throw new InternalServerError("투표 게시판이 설정되지 않았습니다.");
   }
 
-  // buildingPermission 유효성 검사
+  // buildingPermission 유효성 검사 (설정된 경우)
   if (
     data.buildingPermission !== undefined &&
     data.buildingPermission !== null
