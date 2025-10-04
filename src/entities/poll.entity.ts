@@ -64,4 +64,5 @@ export class Poll {
 
   @OneToMany(() => Notification, (notification) => notification.poll)
   notifications!: Notification[];
+  id!: string;
 }
