@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { createPoll } from "./polls.service";
+import { createPoll, getPolls } from "./polls.service";
 import { CreatePollDto } from "./dto/create-poll.dto";
+import { validatePollQuery } from "./dto/poll-query-params.dto";
 import { BadRequestError } from "../types/error.type";
 
+/**
+ * 투표 생성 핸들러
+ */
 export const handleCreatePoll = async (
   req: Request,
   res: Response,
@@ -46,6 +50,34 @@ export const handleCreatePoll = async (
       message: "투표가 성공적으로 생성되었습니다",
       pollId: poll.pollId,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 투표 목록 조회 핸들러
+ */
+export const handleGetPolls = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+
+    if (!userId) {
+      throw new BadRequestError("사용자 정보를 찾을 수 없습니다.");
+    }
+
+    // 쿼리 파라미터 유효성 검사 및 파싱
+    const queryParams = validatePollQuery(req.query);
+
+    // 투표 목록 조회
+    const result = await getPolls(userId, userRole, queryParams);
+
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
