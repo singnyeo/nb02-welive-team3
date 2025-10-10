@@ -7,10 +7,11 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
-} from "typeorm";
-import { User } from "./user.entity";
-import { ComplaintBoard } from "./complaint-board.entity";
-import { Comment } from "./comment.entity";
+} from 'typeorm';
+import { User } from './user.entity';
+import { ComplaintBoard } from './complaint-board.entity';
+import { Comment } from './comment.entity';
+import { Notification } from './notification.entity';
 
 export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
 
@@ -38,9 +39,8 @@ export class Complaint {
 
   @ManyToOne(() => ComplaintBoard, (board) => board.complaints, {
     nullable: true,
-    onDelete: "SET NULL",
+    onDelete: 'SET NULL',
   })
-
   @Column({ length: 100 })
   title!: string;
 

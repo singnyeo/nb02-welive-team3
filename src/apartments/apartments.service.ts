@@ -6,8 +6,8 @@ import { ILike } from 'typeorm';
 
 const apartmentRepository = AppDataSource.getRepository(Apartment);
 
-export const getApartments = async (query: z.infer<typeof GetApartmentsRequestQuerySchema>) => {
-  const { name, address } = query;
+export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQuerySchema>) => {
+  const { name, address } = query || {};
 
   const apartments = await apartmentRepository.find({
     where: [name ? { name: ILike(`%${name}%`) } : {}, address ? { address: ILike(`%${address}%`) } : {}],

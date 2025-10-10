@@ -11,6 +11,8 @@ import {
   SignupResponseSchema,
   SignupSuperAdminRequestSchema,
   SignupSuperAdminResponseSchema,
+  UpdateAdminsStatusRequestSchema,
+  UpdateAdminStatusRequestSchema,
 } from './auth.dto';
 import { BadRequestError, UnauthorizedError } from '../types/error.type';
 import {
@@ -22,6 +24,8 @@ import {
   signup,
   signupAdmin,
   signupSuperAdmin,
+  updateAdminsStatus,
+  updateAdminStatus,
 } from './auth.service';
 import z from 'zod';
 import {
@@ -36,9 +40,9 @@ import {
 import { Payload } from '../types/payload.type';
 
 export const handleSignup: RequestHandler = async (req, res) => {
-  const result = SignupRequestSchema.safeParse(req);
+  const result = SignupRequestSchema.safeParse({ body: req.body });
   if (!result.success) {
-    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
   }
 
   const signedupUser = await signup(result.data.body);
@@ -57,11 +61,8 @@ export const handleSignup: RequestHandler = async (req, res) => {
 export const handleSignupAdmin: RequestHandler = async (req, res) => {
   const body = SignupAdminRequestBodySchema.safeParse(req.body);
   if (!body.success) {
-    console.error(body.error.format());
-    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
   }
-
-  console.log(body);
 
   const signedupUser = await signupAdmin(body.data);
 
@@ -73,14 +74,13 @@ export const handleSignupAdmin: RequestHandler = async (req, res) => {
     joinStatus: signedupUser.joinStatus,
     isActive: signedupUser.isActive,
   };
-  console.log('Admin signed up:', response);
   res.status(201).json(response);
 };
 
 export const handleSignupSuperAdmin: RequestHandler = async (req, res) => {
   const result = SignupSuperAdminRequestSchema.safeParse(req);
   if (!result.success) {
-    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
   }
 
   const signedupUser = await signupSuperAdmin(result.data.body);
@@ -98,9 +98,9 @@ export const handleSignupSuperAdmin: RequestHandler = async (req, res) => {
 };
 
 export const handleLogin: RequestHandler = async (req, res) => {
-  const result = LoginRequestSchema.safeParse(req);
+  const result = LoginRequestSchema.safeParse({ body: req.body });
   if (!result.success) {
-    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
   }
 
   const loggedinUser = await login(result.data.body);
@@ -139,11 +139,10 @@ export const handleLogin: RequestHandler = async (req, res) => {
 };
 
 export const handleLogout: RequestHandler = async (req, res) => {
-  const result = LogoutRequestSchema.safeParse(req);
+  const result = LogoutRequestSchema.safeParse({ user: req.user });
   if (!result.success) {
     return new UnauthorizedError('로그아웃 중 오류가 발생했습니다.');
   }
-
   const { id } = result.data.user;
 
   await logout(id);
@@ -159,13 +158,13 @@ export const handleLogout: RequestHandler = async (req, res) => {
 export const handleRefresh: RequestHandler = async (req, res) => {
   const result = RefreshRequestSchema.safeParse(req);
   if (!result.success) {
-    return new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다.');
   }
 
   const { id } = result.data.user;
   const refreshToken = getRefreshToken(req);
   if (!refreshToken) {
-    return new UnauthorizedError('인증 실패(로그인 필요)');
+    throw new UnauthorizedError('인증 실패(로그인 필요)');
   }
 
   await refresh(id, refreshToken);
@@ -184,12 +183,38 @@ export const handleRefresh: RequestHandler = async (req, res) => {
   res.status(200).json(response);
 };
 
-export const handleUpdateAdminStatus: RequestHandler = (_req, res) => {
-  res.status(200).send('handleUpdateAdminStatus');
+export const handleUpdateAdminStatus: RequestHandler = async (req, res) => {
+  const result = UpdateAdminStatusRequestSchema.safeParse({
+    params: req.params,
+    body: req.body,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { id } = result.data.params;
+  const { status } = result.data.body;
+
+  await updateAdminStatus(id, status);
+
+  res.status(200).send('작업이 성공적으로 완료되었습니다');
 };
 
-export const handleUpdateAdminsStatus: RequestHandler = (_req, res) => {
-  res.status(200).send('handleUpdateAdminsStatus');
+export const handleUpdateAdminsStatus: RequestHandler = async (req, res) => {
+  const result = UpdateAdminsStatusRequestSchema.safeParse({
+    body: req.body,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { status } = result.data.body;
+
+  await updateAdminsStatus(status);
+
+  res.status(200).send('작업이 성공적으로 완료되었습니다');
 };
 
 export const handleUpdateResidentStatus: RequestHandler = (_req, res) => {

@@ -13,16 +13,11 @@ import { NoticeBoard } from './notice-board.entity';
 import { ComplaintBoard } from './complaint-board.entity';
 import { PollBoard } from './poll-board.entity';
 import { Resident } from './resident.entity';
+import { ApprovalStatus } from './approvalStatus.entity';
 
 // =
 // : 아파트
 // =
-
-export enum ApartmentStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-}
 
 @Entity('apartments')
 export class Apartment {
@@ -67,10 +62,10 @@ export class Apartment {
 
   @Column({
     type: 'enum',
-    enum: ApartmentStatus,
-    default: ApartmentStatus.PENDING,
+    enum: ApprovalStatus,
+    default: ApprovalStatus.PENDING,
   })
-  apartmentStatus!: ApartmentStatus;
+  apartmentStatus!: ApprovalStatus;
 
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
@@ -79,8 +74,8 @@ export class Apartment {
   // @OneToMany(() => User, (user) => user.apartment)
   // admins!: User[];
 
-  @Column()
-  adminId!: string;
+  @Column({ nullable: true })
+  adminId?: string;
 
   @OneToOne(() => NoticeBoard, (noticeBoard) => noticeBoard.apartment)
   noticeBoard!: NoticeBoard;

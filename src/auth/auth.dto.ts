@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { JoinStatus, UserRole } from '../entities/user.entity';
+import { UserRole } from '../entities/user.entity';
+import { ApprovalStatus } from '../entities/approvalStatus.entity';
 
 // =============================
 // : ZOD CUSTOM TYPES
@@ -11,13 +12,13 @@ const password = z
   .string()
   .min(8)
   .max(128)
-  .regex(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,128}$/, {
+  .regex(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>-_]).{8,128}$/, {
     message: '비밀번호는 영문, 숫자, 특수문자를 모두 포함해야 합니다.',
   });
 const name = z.string().min(1).max(64);
 const contact = z.string().max(11);
 const role = z.enum(UserRole);
-const joinStatus = z.enum(JoinStatus);
+const joinStatus = z.enum(ApprovalStatus);
 const apartmentName = z.string().min(1).max(64);
 const apartmentDong = z.string().min(1).max(8);
 const apartmentHo = z.string().min(1).max(8);
@@ -55,7 +56,7 @@ export const AuthRequestParamsSchema = z.object({
 export const SignupRequestBodySchema = z.object({
   username: username,
   password: password,
-  passwordConfirm: password,
+  //passwordConfirm: password,
   contact: contact,
   name: name,
   email: email,
@@ -81,7 +82,7 @@ export const SignupResponseSchema = z.object({
 export const SignupAdminRequestBodySchema = z.object({
   username: username,
   password: password,
-  passwordConfirm: password,
+  //passwordConfirm: password,
   contact: contact,
   name: name,
   email: email,
@@ -116,7 +117,7 @@ export const SignupSuperAdminRequestBodySchema = z.object({
   name: name,
   email: email,
   role: role.default(UserRole.SUPER_ADMIN),
-  joinStatus: joinStatus.default(JoinStatus.APPROVED),
+  joinStatus: joinStatus.default(ApprovalStatus.APPROVED),
 });
 
 export const SignupSuperAdminRequestSchema = z.object({
@@ -171,16 +172,29 @@ export const RefreshResponseSchema = z.object({
   message: message,
 });
 
-export const UpdateAdminStatusRequestSchema = z.object({
+export const UpdateAdminStatusRequestParamsSchema = z.object({
+  id: id,
+});
+
+export const UpdateAdminStatusRequestBodySchema = z.object({
   status: joinStatus,
+});
+
+export const UpdateAdminStatusRequestSchema = z.object({
+  params: UpdateAdminStatusRequestParamsSchema,
+  body: UpdateAdminStatusRequestBodySchema,
 });
 
 export const UpdateAdminStatusResponseSchema = z.object({
   message: message,
 });
 
-export const UpdateAdminsStatusRequestSchema = z.object({
+export const UpdateAdminsStatusRequestBodySchema = z.object({
   status: joinStatus,
+});
+
+export const UpdateAdminsStatusRequestSchema = z.object({
+  body: UpdateAdminsStatusRequestBodySchema,
 });
 
 export const UpdateAdminsStatusResponseSchema = z.object({
