@@ -12,7 +12,10 @@ export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQ
   const apartments = await apartmentRepository.find({
     where: [name ? { name: ILike(`%${name}%`) } : {}, address ? { address: ILike(`%${address}%`) } : {}],
     relations: ['users'],
+    withDeleted: false,
   });
+
+  console.log('Apartments:', apartments);
 
   const formattedApartments = apartments.map((apartment) => {
     const admin = apartment.users.find((u) => u.id === apartment.adminId);

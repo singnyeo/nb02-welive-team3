@@ -217,13 +217,18 @@ export const UpdateResidentsStatusResponseSchema = z.object({
   message: z.string().min(1).max(128),
 });
 
-export const UpdateAdminRequestSchema = z.object({
+export const UpdateAdminRequestBodySchema = z.object({
   contact: contact.optional(),
   email: email.optional(),
   description: description.optional(),
   apartmentName: apartmentName.optional(),
   apartmentAddress: apartmentAddress.optional(),
   apartmentManagementNumber: apartmentManagementNumber.optional(),
+});
+
+export const UpdateAdminRequestSchema = z.object({
+  body: UpdateAdminRequestBodySchema,
+  params: AuthRequestParamsSchema,
 });
 
 export const UpdateAdminResponseSchema = z.object({

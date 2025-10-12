@@ -70,10 +70,6 @@ export class Apartment {
   @OneToMany(() => User, (user) => user.apartment)
   users!: User[];
 
-  // 아파트 관리자는 한 명으로 추측
-  // @OneToMany(() => User, (user) => user.apartment)
-  // admins!: User[];
-
   @Column({ nullable: true })
   adminId?: string;
 

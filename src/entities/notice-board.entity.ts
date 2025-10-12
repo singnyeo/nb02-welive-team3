@@ -23,7 +23,9 @@ export class NoticeBoard {
   @Column()
   apartmentId!: string;
 
-  @OneToOne(() => Apartment, (apartment) => apartment.noticeBoard)
+  @OneToOne(() => Apartment, (apartment) => apartment.noticeBoard, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'apartmentId' })
   apartment!: Apartment;
 }

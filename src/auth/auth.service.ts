@@ -4,6 +4,7 @@ import {
   SignupAdminRequestBodySchema,
   SignupRequestBodySchema,
   SignupSuperAdminRequestBodySchema,
+  UpdateAdminRequestBodySchema,
 } from './auth.dto';
 import { AppDataSource } from '../config/data-source';
 import {
@@ -242,6 +243,7 @@ export const login = async (body: z.infer<typeof LoginRequestBodySchema>) => {
   const user = await userRepository.findOne({
     where: { username },
     relations: { apartment: true, resident: true },
+    withDeleted: false,
   });
   if (!user) {
     throw new BadRequestError('사용자를 찾을 수 없습니다');
@@ -339,7 +341,6 @@ export const updateAdminStatus = async (adminId: string, status: ApprovalStatus)
 };
 
 export const updateAdminsStatus = async (status: ApprovalStatus) => {
-  // status 가 pending 인 모든 admin 계정을 찾아서 status 업데이트
   const admins = await userRepository.find({
     where: { role: UserRole.ADMIN, joinStatus: ApprovalStatus.PENDING },
     relations: { apartment: true },
@@ -363,4 +364,121 @@ export const updateAdminsStatus = async (status: ApprovalStatus) => {
   }
 
   return;
+};
+
+export const updateAdmin = async (adminId: string, body: z.infer<typeof UpdateAdminRequestBodySchema>) => {
+  const { contact, email, description, apartmentName, apartmentAddress, apartmentManagementNumber } = body;
+
+  console.log('UpdateAdmin body:', body);
+
+  const admin = await userRepository.findOne({
+    where: { id: adminId, role: UserRole.ADMIN },
+    relations: { apartment: true },
+  });
+  if (!admin) {
+    throw new NotFoundError('존재하지 않는 관리자입니다.');
+  }
+
+  if (contact) {
+    const existContact = await userRepository.findOne({ where: { contact } });
+    if (existContact && existContact.id !== adminId) {
+      throw new ConflictError('이미 사용 중인 전화번호입니다.');
+    }
+    admin.contact = contact;
+  }
+
+  if (email) {
+    const existEmail = await userRepository.findOne({ where: { email } });
+    if (existEmail && existEmail.id !== adminId) {
+      throw new ConflictError('이미 사용 중인 이메일입니다.');
+    }
+    admin.email = email;
+  }
+
+  if (description) {
+    const apartment = admin.apartment;
+    if (apartment) {
+      apartment.description = description;
+      await apartmentRepository.save(apartment);
+    }
+  }
+
+  if (apartmentName || apartmentAddress || apartmentManagementNumber) {
+    const apartment = admin.apartment;
+    if (apartment) {
+      if (apartmentName) apartment.name = apartmentName;
+      if (apartmentAddress) apartment.address = apartmentAddress;
+      if (apartmentManagementNumber) apartment.officeNumber = apartmentManagementNumber;
+      await apartmentRepository.save(apartment);
+    }
+  }
+
+  await userRepository.save(admin);
+
+  return;
+};
+
+export const deleteAdmin = async (adminId: string) => {
+  const admin = await userRepository.findOne({
+    where: { id: adminId, role: UserRole.ADMIN },
+    relations: { apartment: true },
+  });
+  if (!admin) {
+    throw new NotFoundError('존재하지 않는 관리자입니다.');
+  }
+
+  const apartment = admin.apartment;
+  if (apartment) {
+    apartment.adminId = null;
+    apartment.apartmentStatus = ApprovalStatus.PENDING;
+    await apartmentRepository.save(apartment);
+
+    await apartmentRepository.softDelete(apartment.id);
+  }
+
+  await userRepository.softDelete(admin.id);
+
+  return;
+};
+
+export const cleanup = async (userId: string) => {
+  const user = await userRepository.findOne({
+    where: { id: userId },
+  });
+  if (!user) {
+    throw new NotFoundError('존재하지 않는 사용자입니다.');
+  }
+  if (user.role !== UserRole.ADMIN && user.role !== UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError('접근 권한이 없습니다.');
+  }
+
+  if (user.role === UserRole.SUPER_ADMIN) {
+    const adminsToDelete = await userRepository.find({
+      where: { role: UserRole.ADMIN, joinStatus: ApprovalStatus.REJECTED },
+      withDeleted: false,
+    });
+
+    for (const admin of adminsToDelete) {
+      const apartment = await apartmentRepository.findOne({
+        where: { id: admin.apartmentId },
+      });
+      if (apartment) {
+        apartment.adminId = null;
+        apartment.apartmentStatus = ApprovalStatus.PENDING;
+        await apartmentRepository.save(apartment);
+
+        await apartmentRepository.softDelete(apartment.id);
+      }
+      await userRepository.softDelete(admin.id);
+    }
+  } else if (user.role === UserRole.ADMIN) {
+    const residentsToDelete = await residentRepository.find({
+      where: { approvalStatus: ApprovalStatus.REJECTED },
+      withDeleted: false,
+    });
+
+    for (const resident of residentsToDelete) {
+      await residentRepository.softDelete(resident.id);
+    }
+  }
 };

@@ -1,5 +1,6 @@
 import { RequestHandler } from 'express';
 import {
+  DeleteAdminRequestSchema,
   LoginRequestSchema,
   LoginResponseSchema,
   LogoutRequestSchema,
@@ -11,12 +12,15 @@ import {
   SignupResponseSchema,
   SignupSuperAdminRequestSchema,
   SignupSuperAdminResponseSchema,
+  UpdateAdminRequestSchema,
   UpdateAdminsStatusRequestSchema,
   UpdateAdminStatusRequestSchema,
 } from './auth.dto';
 import { BadRequestError, UnauthorizedError } from '../types/error.type';
 import {
   addRefreshToken,
+  cleanup,
+  deleteAdmin,
   login,
   logout,
   refresh,
@@ -24,6 +28,7 @@ import {
   signup,
   signupAdmin,
   signupSuperAdmin,
+  updateAdmin,
   updateAdminsStatus,
   updateAdminStatus,
 } from './auth.service';
@@ -38,6 +43,7 @@ import {
   setRefreshToken,
 } from '../utils/token.util';
 import { Payload } from '../types/payload.type';
+import { getUser } from '../utils/user.util';
 
 export const handleSignup: RequestHandler = async (req, res) => {
   const result = SignupRequestSchema.safeParse({ body: req.body });
@@ -198,7 +204,7 @@ export const handleUpdateAdminStatus: RequestHandler = async (req, res) => {
 
   await updateAdminStatus(id, status);
 
-  res.status(200).send('작업이 성공적으로 완료되었습니다');
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
 export const handleUpdateAdminsStatus: RequestHandler = async (req, res) => {
@@ -214,7 +220,7 @@ export const handleUpdateAdminsStatus: RequestHandler = async (req, res) => {
 
   await updateAdminsStatus(status);
 
-  res.status(200).send('작업이 성공적으로 완료되었습니다');
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
 export const handleUpdateResidentStatus: RequestHandler = (_req, res) => {
@@ -225,14 +231,51 @@ export const handleUpdateResidentsStatus: RequestHandler = (_req, res) => {
   res.status(200).send('handleUpdateResidentsStatus');
 };
 
-export const handleUpdateAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleUpdateAdmin');
+export const handleUpdateAdmin: RequestHandler = async (req, res) => {
+  const result = UpdateAdminRequestSchema.safeParse({
+    body: req.body,
+    params: req.params,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { id } = result.data.params;
+  const { contact, email, description, apartmentName, apartmentAddress, apartmentManagementNumber } = result.data.body;
+
+  await updateAdmin(id, {
+    contact,
+    email,
+    description,
+    apartmentName,
+    apartmentAddress,
+    apartmentManagementNumber,
+  });
+
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
-export const handleDeleteAdmin: RequestHandler = (_req, res) => {
-  res.status(200).send('handleDeleteAdmin');
+export const handleDeleteAdmin: RequestHandler = async (req, res) => {
+  const result = DeleteAdminRequestSchema.safeParse({
+    params: req.params,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { id } = result.data.params;
+
+  await deleteAdmin(id);
+
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
-export const handleCleanup: RequestHandler = (_req, res) => {
-  res.status(200).send('handleCleanup');
+export const handleCleanup: RequestHandler = async (req, res) => {
+  const user = getUser(req);
+
+  await cleanup(user.id);
+
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
