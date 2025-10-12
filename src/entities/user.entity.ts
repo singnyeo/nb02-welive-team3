@@ -16,6 +16,8 @@ import { Complaint } from './complaint.entity';
 import { Vote } from './vote.entity';
 import { Poll } from './poll.entity';
 import { UserNotification } from './user-notification.entity';
+import { Comment } from './comment.entity';
+import { ApprovalStatus } from './approvalStatus.entity';
 
 // =
 // : 사용자
@@ -25,13 +27,6 @@ export enum UserRole {
   USER = 'USER',
   ADMIN = 'ADMIN',
   SUPER_ADMIN = 'SUPER_ADMIN',
-}
-
-export enum JoinStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  NEED_UPDATE = 'NEED_UPDATE',
 }
 
 @Entity('users')
@@ -63,8 +58,8 @@ export class User {
   @Column({ type: 'enum', enum: UserRole })
   role!: UserRole;
 
-  @Column({ type: 'enum', enum: JoinStatus, default: JoinStatus.PENDING })
-  joinStatus!: JoinStatus;
+  @Column({ type: 'enum', enum: ApprovalStatus, default: ApprovalStatus.PENDING })
+  joinStatus!: ApprovalStatus;
 
   @OneToOne(() => Resident, (resident) => resident.user, { nullable: true })
   @JoinColumn({ name: 'residentId' })
@@ -83,8 +78,8 @@ export class User {
   @OneToMany(() => Complaint, (complaint) => complaint.user)
   complaints!: Complaint[];
 
-  //@OneToMany(() => Notice, (notice) => notice.user)
-  //notices!: Notice[];
+  /* @OneToMany(() => Notice, (notice) => notice.user)
+  notices!: Notice[]; */
 
   @OneToMany(() => Poll, (poll) => poll.user)
   polls!: Poll[];
@@ -92,8 +87,8 @@ export class User {
   @OneToMany(() => Vote, (vote) => vote.user)
   votes!: Vote[];
 
-  //   @OneToMany(() => Comment, (comment) => comment.user)
-  //   comments!: Comment[];
+  @OneToMany(() => Comment, (comment) => comment.user)
+  comments!: Comment[];
 
   @OneToMany(() => UserNotification, (userNotification) => userNotification.user)
   userNotifications!: UserNotification[];

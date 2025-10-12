@@ -22,7 +22,7 @@ export const globalErrorHandler: ErrorRequestHandler = async (error, req, res, _
     message = error.message;
   } else if (isErrorInstanceOfNode(error)) {
     status = 500;
-    // message = error.message;
+    message = error.message;
   }
 
   const log = {
@@ -31,6 +31,7 @@ export const globalErrorHandler: ErrorRequestHandler = async (error, req, res, _
     url: getUrl(req),
     status: String(status),
     createdAt: new Date(),
+    message: message,
   };
 
   console.error(log);

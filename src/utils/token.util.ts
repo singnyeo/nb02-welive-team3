@@ -28,7 +28,7 @@ export const verifyRefreshToken = (token: string): Payload => {
 
 // [!] 배포 시 secure: true로 변경 필요(https에서만 쿠키 전송)
 export const setAccessToken = (res: Response, token: string) => {
-  res.cookie('access-token', token, {
+  res.cookie('access_token', token, {
     httpOnly: true,
     secure: false,
     sameSite: 'strict',
@@ -37,16 +37,16 @@ export const setAccessToken = (res: Response, token: string) => {
 };
 
 export const getAccessToken = (req: Request): string | undefined => {
-  return req.cookies?.['access-token'];
+  return req.cookies?.['access_token'];
 };
 
 export const deleteAccessToken = (res: Response) => {
-  res.clearCookie('access-token');
+  res.clearCookie('access_token');
 };
 
 // [!] 배포 시 secure: true로 변경 필요(https에서만 쿠키 전송)
 export const setRefreshToken = (res: Response, token: string) => {
-  res.cookie('refresh-token', token, {
+  res.cookie('refresh_token', token, {
     httpOnly: true,
     secure: false,
     sameSite: 'strict',
@@ -55,11 +55,11 @@ export const setRefreshToken = (res: Response, token: string) => {
 };
 
 export const getRefreshToken = (req: Request): string | undefined => {
-  return req.cookies?.['refresh-token'];
+  return req.cookies?.['refresh_token'];
 };
 
 export const deleteRefreshToken = (res: Response) => {
-  res.clearCookie('refresh-token');
+  res.clearCookie('refresh_token');
 };
 
 // 남은 토큰 기간 확인

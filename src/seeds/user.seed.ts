@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
-import { User, UserRole, JoinStatus } from '../entities/user.entity';
+import { User, UserRole } from '../entities/user.entity';
 import * as bcrypt from 'bcrypt';
+import { ApprovalStatus } from '../entities/approvalStatus.entity';
 
 export async function seedUsers(dataSource: DataSource) {
   const repo = dataSource.getRepository(User);
@@ -16,7 +17,7 @@ export async function seedUsers(dataSource: DataSource) {
       email: 'superadmin@example.com',
       contact: '010-0000-0000',
       role: UserRole.SUPER_ADMIN,
-      joinStatus: JoinStatus.APPROVED,
+      joinStatus: ApprovalStatus.APPROVED,
       isActive: true,
     });
     await repo.save(superAdmin);

@@ -17,7 +17,9 @@ export class ComplaintBoard {
   @Column()
   apartmentId!: string;
 
-  @OneToOne(() => Apartment, (apartment) => apartment.complaintBoard)
+  @OneToOne(() => Apartment, (apartment) => apartment.complaintBoard, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'apartmentId' })
   apartment!: Apartment;
 }
