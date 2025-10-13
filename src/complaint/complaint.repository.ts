@@ -18,8 +18,12 @@ export async function getComplaints(page: number, limit: number) {
 }
 
 export async function getComplaintById(complaintId: string) {
-  return await complaintRepository.findOneBy({ complaintId });
+  return await complaintRepository.findOne({
+    where: { complaintId },
+    relations: ["user", "complaintBoard", "comments"],
+  });
 }
+
 
 export async function updateComplaint(complaintId: string, data: UpdateComplaintInput) {
   await complaintRepository.update({ complaintId }, data);
