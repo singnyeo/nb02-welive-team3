@@ -3,6 +3,7 @@ import { createPoll, getPolls } from "./polls.service";
 import { CreatePollDto } from "./dto/create-poll.dto";
 import { validatePollQuery } from "./dto/poll-query-params.dto";
 import { BadRequestError } from "../types/error.type";
+import { ZodError } from "zod";
 
 /**
  * 투표 생성 핸들러
@@ -71,8 +72,18 @@ export const handleGetPolls = async (
       throw new BadRequestError("사용자 정보를 찾을 수 없습니다.");
     }
 
-    // 쿼리 파라미터 유효성 검사 및 파싱
-    const queryParams = validatePollQuery(req.query);
+    // 쿼리 파라미터 유효성 검사 - Zod 에러를 BadRequestError로 변환
+    let queryParams;
+    try {
+      queryParams = validatePollQuery(req.query);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        // Zod 에러 메시지를 추출하여 BadRequestError로 변환
+        const errorMessage = error.issues.map((e) => e.message).join(", ");
+        throw new BadRequestError(`잘못된 요청: ${errorMessage}`);
+      }
+      throw error;
+    }
 
     // 투표 목록 조회
     const result = await getPolls(userId, userRole, queryParams);
