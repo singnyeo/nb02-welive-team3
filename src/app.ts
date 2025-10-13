@@ -8,7 +8,7 @@ import auth from './auth/auth.router';
 import resident from './residents/resident.router';
 import apartments from './apartments/apartments.router';
 import env from './config/env';
-import notifications from './notofications/notifications.router';
+import notifications from './notifications/notifications.router';
 import pollsRouter from './polls/polls.router';
 import users from './users/users.router';
 const app: Application = express();
