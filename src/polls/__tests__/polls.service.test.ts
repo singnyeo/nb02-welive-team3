@@ -9,6 +9,8 @@ import {
   NotFoundError,
 } from "../../types/error.type";
 import { CreatePollDto } from "../dto/create-poll.dto";
+import { getPolls } from "../polls.service";
+import { PollQueryParams } from "../dto/poll-query-params.dto";
 import { Poll } from "../../entities/poll.entity";
 import { PollOption } from "../../entities/poll-option.entity";
 
@@ -240,6 +242,266 @@ describe("Polls Service", () => {
 
       expect(result.pollId).toBe("new-poll-123");
       expect(mockApartmentRepository.findOne).toHaveBeenCalled();
+    });
+  });
+  describe("PollService - getPolls", () => {
+    let userRepository: any;
+    let pollRepository: any;
+    let mockQueryBuilder: any;
+
+    beforeEach(() => {
+      userRepository = {
+        findOne: jest.fn(),
+      };
+
+      mockQueryBuilder = {
+        createQueryBuilder: jest.fn().mockReturnThis(),
+        leftJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn(),
+      };
+
+      pollRepository = {
+        createQueryBuilder: jest.fn(() => mockQueryBuilder),
+      };
+
+      jest
+        .spyOn(AppDataSource, "getRepository")
+        .mockImplementation((entity: any): any => {
+          if (entity === "User") return userRepository;
+          if (entity === "Poll") return pollRepository;
+          return {};
+        });
+    });
+
+    describe("투표 목록 조회", () => {
+      const mockUserId = "user-123";
+      const mockQueryParams: PollQueryParams = {
+        page: 1,
+        limit: 11,
+      };
+
+      it("관리자가 모든 투표를 조회할 수 있어야 함", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: { id: "apt-123" },
+          residences: [],
+        };
+
+        const mockPolls = [
+          {
+            pollId: "poll-1",
+            userId: "user-1",
+            title: "투표 1",
+            writerName: "작성자1",
+            buildingPermission: 101,
+            createdAt: new Date("2024-01-01"),
+            updatedAt: new Date("2024-01-01"),
+            startDate: new Date("2024-01-10"),
+            endDate: new Date("2024-01-20"),
+            status: "PENDING",
+          },
+          {
+            pollId: "poll-2",
+            userId: "user-2",
+            title: "투표 2",
+            writerName: "작성자2",
+            buildingPermission: null,
+            createdAt: new Date("2024-01-02"),
+            updatedAt: new Date("2024-01-02"),
+            startDate: new Date("2024-01-15"),
+            endDate: new Date("2024-01-25"),
+            status: "IN_PROGRESS",
+          },
+        ];
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+        mockQueryBuilder.getManyAndCount.mockResolvedValue([mockPolls, 2]);
+
+        // When
+        const result = await getPolls(mockUserId, "ADMIN", mockQueryParams);
+
+        // Then
+        expect(result.polls).toHaveLength(2);
+        expect(result.totalCount).toBe(2);
+        expect(result.polls[0].pollId).toBe("poll-1");
+        expect(result.polls[1].pollId).toBe("poll-2");
+
+        // 관리자는 andWhere 조건이 추가되지 않음
+        expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
+      });
+
+      it("일반 사용자는 권한이 있는 투표만 조회할 수 있어야 함", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: { id: "apt-123" },
+          residences: [{ dong: "101" }, { dong: "102" }],
+        };
+
+        const mockPolls = [
+          {
+            pollId: "poll-1",
+            userId: "user-1",
+            title: "101동 투표",
+            writerName: "작성자1",
+            buildingPermission: 101,
+            createdAt: new Date("2024-01-01"),
+            updatedAt: new Date("2024-01-01"),
+            startDate: new Date("2024-01-10"),
+            endDate: new Date("2024-01-20"),
+            status: "PENDING",
+          },
+          {
+            pollId: "poll-2",
+            userId: "user-2",
+            title: "전체 공개 투표",
+            writerName: "작성자2",
+            buildingPermission: null,
+            createdAt: new Date("2024-01-02"),
+            updatedAt: new Date("2024-01-02"),
+            startDate: new Date("2024-01-15"),
+            endDate: new Date("2024-01-25"),
+            status: "IN_PROGRESS",
+          },
+        ];
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+        mockQueryBuilder.getManyAndCount.mockResolvedValue([mockPolls, 2]);
+
+        // When
+        const result = await getPolls(mockUserId, "USER", mockQueryParams);
+
+        // Then
+        expect(result.polls).toHaveLength(2);
+        expect(result.totalCount).toBe(2);
+
+        // 일반 사용자는 권한 필터링 조건이 추가됨
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          "(poll.buildingPermission IS NULL OR poll.buildingPermission IN (:...dongNumbers))",
+          { dongNumbers: [101, 102] }
+        );
+      });
+
+      it("페이지네이션이 올바르게 동작해야 함", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: { id: "apt-123" },
+          residences: [],
+        };
+
+        const queryParamsPage2: PollQueryParams = {
+          page: 2,
+          limit: 10,
+        };
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+        mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 25]);
+
+        // When
+        await getPolls(mockUserId, "ADMIN", queryParamsPage2);
+
+        // Then
+        expect(mockQueryBuilder.skip).toHaveBeenCalledWith(10); // (2-1) * 10
+        expect(mockQueryBuilder.take).toHaveBeenCalledWith(10);
+      });
+
+      it("거주지 정보가 없는 사용자는 전체 공개 투표만 조회 가능", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: { id: "apt-123" },
+          residences: [],
+        };
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+        mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0]);
+
+        // When
+        await getPolls(mockUserId, "USER", mockQueryParams);
+
+        // Then
+        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+          "poll.buildingPermission IS NULL"
+        );
+      });
+
+      it("사용자를 찾을 수 없을 때 NotFoundError를 던져야 함", async () => {
+        // Given
+        userRepository.findOne.mockResolvedValue(null);
+
+        // When & Then
+        await expect(
+          getPolls(mockUserId, "USER", mockQueryParams)
+        ).rejects.toThrow(NotFoundError);
+
+        expect(userRepository.findOne).toHaveBeenCalledWith({
+          where: { id: mockUserId },
+          relations: {
+            apartment: true,
+            residences: true,
+          },
+        });
+      });
+
+      it("아파트 정보가 없는 사용자일 때 ForbiddenError를 던져야 함", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: null,
+          residences: [],
+        };
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+
+        // When & Then
+        await expect(
+          getPolls(mockUserId, "USER", mockQueryParams)
+        ).rejects.toThrow(ForbiddenError);
+      });
+
+      it("날짜가 ISO 형식으로 변환되어야 함", async () => {
+        // Given
+        const mockUser = {
+          id: mockUserId,
+          apartment: { id: "apt-123" },
+          residences: [],
+        };
+
+        const mockDate = new Date("2024-01-01T10:00:00Z");
+        const mockPolls = [
+          {
+            pollId: "poll-1",
+            userId: "user-1",
+            title: "테스트 투표",
+            writerName: "작성자",
+            buildingPermission: null,
+            createdAt: mockDate,
+            updatedAt: mockDate,
+            startDate: mockDate,
+            endDate: mockDate,
+            status: "PENDING",
+          },
+        ];
+
+        userRepository.findOne.mockResolvedValue(mockUser);
+        mockQueryBuilder.getManyAndCount.mockResolvedValue([mockPolls, 1]);
+
+        // When
+        const result = await getPolls(mockUserId, "ADMIN", mockQueryParams);
+
+        // Then
+        expect(result.polls[0].createdAt).toBe("2024-01-01T10:00:00.000Z");
+        expect(result.polls[0].updatedAt).toBe("2024-01-01T10:00:00.000Z");
+        expect(result.polls[0].startDate).toBe("2024-01-01T10:00:00.000Z");
+        expect(result.polls[0].endDate).toBe("2024-01-01T10:00:00.000Z");
+      });
     });
   });
 });

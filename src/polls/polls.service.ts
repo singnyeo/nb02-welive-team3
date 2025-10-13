@@ -2,6 +2,9 @@ import { AppDataSource } from "../config/data-source";
 import { CreatePollDto } from "./dto/create-poll.dto";
 import { Poll } from "../entities/poll.entity";
 import { PollOption } from "../entities/poll-option.entity";
+import { PollQueryParams } from "./dto/poll-query-params.dto";
+import { PollsListWrapperDto } from "./dto/poll-list-wrapper.dto";
+import { PollListResponseDto } from "./dto/poll-list-response.dto";
 import {
   BadRequestError,
   ForbiddenError,
@@ -120,4 +123,95 @@ export const createPoll = async (
   } finally {
     await queryRunner.release();
   }
+};
+
+/**
+ * 투표 목록 조회
+ */
+export const getPolls = async (
+  userId: string,
+  userRole: string,
+  queryParams: PollQueryParams
+): Promise<PollsListWrapperDto> => {
+  const userRepository = AppDataSource.getRepository("User");
+  const pollRepository = AppDataSource.getRepository("Poll");
+
+  // 페이지네이션 계산
+  const skip = (queryParams.page - 1) * queryParams.limit;
+  const take = queryParams.limit;
+
+  // 사용자 정보 조회
+  const user = await userRepository.findOne({
+    where: { id: userId },
+    relations: {
+      apartment: true,
+      residences: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundError("사용자를 찾을 수 없습니다.");
+  }
+
+  if (!user.apartment) {
+    throw new ForbiddenError("아파트 정보가 없는 사용자입니다.");
+  }
+
+  // 쿼리 빌더 생성
+  const queryBuilder = pollRepository
+    .createQueryBuilder("poll")
+    .leftJoinAndSelect("poll.user", "user")
+    .where(
+      "poll.boardId IN (SELECT id FROM poll_boards WHERE apartmentId = :apartmentId)",
+      {
+        apartmentId: user.apartment.id,
+      }
+    );
+
+  // 일반 사용자(USER)인 경우 권한 필터링 추가
+  if (userRole === "USER") {
+    // 사용자의 거주지 동 번호 가져오기
+    const userDongNumbers =
+      user.residences?.map((residence: any) => parseInt(residence.dong)) || [];
+
+    if (userDongNumbers.length > 0) {
+      // buildingPermission이 null(전체) 또는 사용자의 동 번호와 일치하는 투표만
+      queryBuilder.andWhere(
+        "(poll.buildingPermission IS NULL OR poll.buildingPermission IN (:...dongNumbers))",
+        { dongNumbers: userDongNumbers }
+      );
+    } else {
+      // 거주지 정보가 없으면 전체 공개 투표만
+      queryBuilder.andWhere("poll.buildingPermission IS NULL");
+    }
+  }
+  // ADMIN이나 SUPER_ADMIN은 모든 투표 조회 가능
+
+  // 정렬 (최신순)
+  queryBuilder.orderBy("poll.createdAt", "DESC");
+
+  // 페이지네이션 적용
+  queryBuilder.skip(skip).take(take);
+
+  // 실행
+  const [polls, totalCount] = await queryBuilder.getManyAndCount();
+
+  // DTO 변환
+  const pollsDto: PollListResponseDto[] = polls.map((poll) => ({
+    pollId: poll.pollId,
+    userId: poll.userId,
+    title: poll.title,
+    writerName: poll.writerName,
+    buildingPermission: poll.buildingPermission,
+    createdAt: poll.createdAt.toISOString(),
+    updatedAt: poll.updatedAt.toISOString(),
+    startDate: poll.startDate.toISOString(),
+    endDate: poll.endDate.toISOString(),
+    status: poll.status,
+  }));
+
+  return {
+    polls: pollsDto,
+    totalCount,
+  };
 };
