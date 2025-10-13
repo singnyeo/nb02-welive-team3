@@ -11,6 +11,7 @@ import env from './config/env';
 import notifications from './notifications/notifications.router';
 import pollsRouter from './polls/polls.router';
 import users from './users/users.router';
+import complaint from "./complaint/complaint.router";
 const app: Application = express();
 
 // 미들웨어
