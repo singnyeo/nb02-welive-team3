@@ -16,7 +16,6 @@
     "migration:create": "npm run typeorm migration:create src/migrations/ManualMigration",
     "migration:run": "npm run typeorm migration:run",
     "migration:revert": "npm run typeorm migration:revert",
-    "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPattern=\\.test\\.ts$",
@@ -36,7 +35,7 @@
   },
   "homepage": "https://github.com/JONGJIN-LEE1/nb02-welive-team3#readme",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.907.0",
+    "@aws-sdk/client-s3": "^3.908.0",
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
