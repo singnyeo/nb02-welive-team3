@@ -8,9 +8,9 @@ import auth from './auth/auth.router';
 import resident from './residents/resident.router';
 import apartments from './apartments/apartments.router';
 import env from './config/env';
-import complaint from './complaint/complaint.router'
-import notifications from './notifications/notifications.router';
-
+import notifications from './notofications/notifications.router';
+import pollsRouter from './polls/polls.router';
+import users from './users/users.router';
 const app: Application = express();
 
 // 미들웨어
@@ -30,6 +30,8 @@ app.use('/api/residents', resident);
 app.use('/api/apartments', apartments);
 app.use('/api/complaints', complaint);
 app.use('/api/notifications', notifications);
+app.use('/api/users', users);
+app.use('/api/polls', pollsRouter);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

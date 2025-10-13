@@ -1,11 +1,11 @@
-import { 
-  Entity, 
-  PrimaryGeneratedColumn, 
-  Column, 
-  JoinColumn, 
-  OneToOne, 
-  //OneToMany 
-  } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  JoinColumn,
+  OneToOne,
+  //OneToMany
+} from 'typeorm';
 import { Apartment } from './apartment.entity';
 
 // =
@@ -16,13 +16,16 @@ import { Apartment } from './apartment.entity';
 export class NoticeBoard {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
   // @OneToMany(() => Notice, (notice) => notice.noticeBoard)
   // notices!: Notice[];
 
   @Column()
   apartmentId!: string;
 
-  @OneToOne(() => Apartment, (apartment) => apartment.noticeBoard)
+  @OneToOne(() => Apartment, (apartment) => apartment.noticeBoard, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'apartmentId' })
   apartment!: Apartment;
 }
