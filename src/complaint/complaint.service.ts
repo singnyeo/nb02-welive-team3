@@ -1,12 +1,12 @@
 import * as repository from "./complaint.repository";
-import { ComplaintListResponseDto, ComplaintDetailDto } from "./complaint.dto";
 import { CreateComplaintInput, UpdateComplaintInput, UpdateComplaintStatusInput } from "./complaint.schema";
 import { v4 as uuidv4 } from "uuid";
+import { ComplaintDetailDto, ComplaintListResponseDto } from "./complaint.dto";
 
 export async function createComplaintService(data: CreateComplaintInput) {
-  // 테스트용 임의 userid 추가
-  const complaintData = { ...data, userId: uuidv4() };
-  return await repository.createComplaint(complaintData);
+  const complaintData = { ...data, userId: uuidv4() }; // 테스트용 userId
+  const complaint = await repository.createComplaint(complaintData);
+  return new ComplaintDetailDto(complaint);
 }
 
 export async function getComplaintsService(page: number, limit: number) {

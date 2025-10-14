@@ -12,6 +12,7 @@ export const handleCreateComplaint = async (req: Request, res: Response) => {
   res.status(201).json({ message: "정상적으로 등록 처리되었습니다" });
 };
 
+
 export const handleGetComplaints = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
@@ -22,15 +23,9 @@ export const handleGetComplaints = async (req: Request, res: Response) => {
 export const handleGetComplaint = async (req: Request, res: Response) => {
   const { complaintId } = req.params;
   const complaint = await service.getComplaintByIdService(complaintId);
-
-  if (!complaint) {
-    return res.status(404).json({ message: "해당 민원을 찾을 수 없습니다." });
-  }
-
+  if (!complaint) return res.status(404).json({ message: "해당 민원을 찾을 수 없습니다." });
   res.json(complaint);
 };
-
-
 
 export const handleUpdateComplaint = async (req: Request, res: Response) => {
   const { complaintId } = req.params;
