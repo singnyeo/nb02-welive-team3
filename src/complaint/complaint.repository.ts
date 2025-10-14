@@ -32,8 +32,8 @@ export async function getComplaintById(complaintId: string) {
 
 export async function updateComplaint(complaintId: string, data: UpdateComplaintInput) {
   await complaintRepository.update({ complaintId }, data);
-  return getComplaintById(complaintId);
 }
+
 
 export async function deleteComplaint(complaintId: string) {
   return await complaintRepository.delete({ complaintId });

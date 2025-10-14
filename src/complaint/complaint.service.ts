@@ -20,9 +20,9 @@ export async function getComplaintByIdService(complaintId: string) {
 }
 
 export async function updateComplaintService(complaintId: string, data: UpdateComplaintInput) {
-  const complaint = await repository.updateComplaint(complaintId, data);
-  return new ComplaintDetailDto(complaint);
+  await repository.updateComplaint(complaintId, data);
 }
+
 
 export async function deleteComplaintService(complaintId: string) {
   return await repository.deleteComplaint(complaintId);

@@ -30,8 +30,8 @@ export const handleGetComplaint = async (req: Request, res: Response) => {
 export const handleUpdateComplaint = async (req: Request, res: Response) => {
   const { complaintId } = req.params;
   const data = updateComplaintSchema.parse(req.body);
-  const complaint = await service.updateComplaintService(complaintId, data);
-  res.json(complaint);
+  await service.updateComplaintService(complaintId, data);
+  res.json({ message: "정상적으로 수정 처리되었습니다" });
 };
 
 export const handleDeleteComplaint = async (req: Request, res: Response) => {
