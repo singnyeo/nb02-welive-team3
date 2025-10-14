@@ -10,12 +10,17 @@ export async function createComplaint(data: CreateComplaintInput) {
 
 export async function getComplaints(page: number, limit: number) {
   const skip = (page - 1) * limit;
-  return await complaintRepository.find({
+
+  const [complaints, totalCount] = await complaintRepository.findAndCount({
     skip,
     take: limit,
     order: { createdAt: "DESC" },
+    relations: ["user"],
   });
+
+  return { complaints, totalCount };
 }
+
 
 export async function getComplaintById(complaintId: string) {
   return await complaintRepository.findOne({

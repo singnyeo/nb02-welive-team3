@@ -15,8 +15,8 @@ export const handleCreateComplaint = async (req: Request, res: Response) => {
 export const handleGetComplaints = async (req: Request, res: Response) => {
   const page = Number(req.query.page) || 1;
   const limit = Number(req.query.limit) || 10;
-  const complaints = await service.getComplaintsService(page, limit);
-  res.json(complaints);
+  const response = await service.getComplaintsService(page, limit);
+  res.json(response);
 };
 
 export const handleGetComplaint = async (req: Request, res: Response) => {
@@ -29,6 +29,7 @@ export const handleGetComplaint = async (req: Request, res: Response) => {
 
   res.json(complaint);
 };
+
 
 
 export const handleUpdateComplaint = async (req: Request, res: Response) => {
