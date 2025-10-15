@@ -1,5 +1,5 @@
 import { RequestHandler, Response } from 'express';
-import { getNotifications } from './notifications.service';
+import { getNotifications, markNotificationAsRead } from './notifications.service';
 import { getUser } from '../utils/user.util';
 
 const clients = new Map<string, Response>();
@@ -48,4 +48,28 @@ export const closeSSE = (userId: string) => {
     res.end();
     clients.delete(userId);
   }
+};
+
+export const sendNotificationToUser = (userId: string, payload: any) => {
+  const res = clients.get(userId);
+  if (!res) return;
+  res.write(`event: alarm\n`);
+  res.write(`data: ${JSON.stringify(payload)}\n\n`);
+};
+
+export const handleReadNotification: RequestHandler = async (req, res) => {
+  const user = getUser(req);
+  const userId = String(user.id);
+  const notificationId = req.params.id;
+
+  const userNotifications = await getNotifications(userId);
+  const notification = userNotifications.find((n) => n.notificationId === notificationId);
+
+  if (!notification) {
+    return res.status(404).json({ message: 'Notification not found' });
+  }
+
+  await markNotificationAsRead(userId, notificationId);
+
+  res.status(200).json({ message: 'Notification marked as read' });
 };

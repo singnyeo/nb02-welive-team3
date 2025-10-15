@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
+/* import { Entity, PrimaryGeneratedColumn, Column, JoinColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, OneToMany, Index } from 'typeorm';
 import { User } from './user.entity';
 import { NoticeBoard } from './notice-board.entity';
 //import { Apartment } from './apartment.entity';
@@ -114,4 +114,4 @@ export class Notification {
 
     @CreateDateColumn({ type: 'timestamptz' })
     createdAt!: Date;
-}
+} */
