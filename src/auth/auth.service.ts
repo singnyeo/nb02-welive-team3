@@ -16,7 +16,7 @@ import {
   UnauthorizedError,
 } from '../types/error.type';
 import { UserRole } from '../entities/user.entity';
-import { HouseholdType, Resident, ResidentStatus } from '../entities/resident.entity';
+import { HouseholdType, Resident, ResidenceStatus } from '../entities/resident.entity';
 import { comparePassword, hashPassword } from '../utils/password.util';
 import { ApprovalStatus } from '../entities/approvalStatus.entity';
 
@@ -89,7 +89,7 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
       apartment: existApartment,
       apartmentId: existApartmentId,
       isHouseholder: HouseholdType.HOUSEHOLDER, // 가입 시점에는 HOUSEHOLDER 가 기본값
-      residentStatus: ResidentStatus.RESIDENCE, // 가입 시점에는 RESIDENCE 가 기본값
+      residentStatus: ResidenceStatus.RESIDENCE, // 가입 시점에는 RESIDENCE 가 기본값
       approvalStatus: ApprovalStatus.PENDING, // 가입 시점에는 PENDING 이 기본값
       isRegistered: true, // 위리브 회원가입으로 생성되기 때문에 자동으로 true 처리
     });
