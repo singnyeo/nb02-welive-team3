@@ -8,6 +8,7 @@ import {
   Index,
 } from "typeorm";
 import { PollOption } from "./poll-option.entity";
+import { Poll } from "./poll.entity";
 import { User } from "./user.entity";
 
 @Entity("votes")
@@ -36,12 +37,9 @@ export class Vote {
   @JoinColumn({ name: "optionId" })
   option!: PollOption;
 
-  @Column()
+  @Column({ type: "uuid" })
   optionId!: string;
 
-  @Column()
-  pollId!: string; // 중복 투표 방지를 위한 pollId 추가
-
   @CreateDateColumn()
-  createdAt!: Date;
+  votedAt!: Date;
 }
