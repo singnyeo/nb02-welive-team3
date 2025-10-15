@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { HouseholdType, ResidentStatus } from '../../entities/resident.entity';
+import { HouseholdType, ResidenceStatus } from '../../entities/resident.entity';
 import { ApprovalStatus } from '../../entities/approvalStatus.entity';
 
 export const createResidentSchema = z.object({
@@ -24,7 +24,7 @@ export const ResidentResponseSchema = z.object({
   contact: z.string(),
   name: z.string(),
   email: z.string().nullable(),
-  residentStatus: z.enum(ResidentStatus),
+  residenceStatus: z.enum(ResidenceStatus),
   isHouseholder: z.enum(HouseholdType),
   isRegistered: z.boolean(),
   approvalStatus: z.union([z.enum(ApprovalStatus), z.literal('PENDING')]),
