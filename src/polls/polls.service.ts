@@ -5,6 +5,9 @@ import { PollOption } from "../entities/poll-option.entity";
 import { PollQueryParams } from "./dto/poll-query-params.dto";
 import { PollsListWrapperDto } from "./dto/poll-list-wrapper.dto";
 import { PollListResponseDto } from "./dto/poll-list-response.dto";
+import { PollDetailResponseDto } from "./dto/poll-detail-response.dto";
+// import { OptionResponse } from "./dto/option-response.dto";
+import { UserRole } from "../entities/user.entity";
 import {
   BadRequestError,
   ForbiddenError,
@@ -214,4 +217,105 @@ export const getPolls = async (
     polls: pollsDto,
     totalCount,
   };
+};
+
+/**
+ * 투표 상세 조회
+ */
+export const getPollDetail = async (
+  pollId: string,
+  userId: string,
+  userRole: string
+): Promise<PollDetailResponseDto> => {
+  const pollRepository = AppDataSource.getRepository("Poll");
+  const userRepository = AppDataSource.getRepository("User");
+  const pollBoardRepository = AppDataSource.getRepository("PollBoard");
+
+  // 사용자 정보 조회
+  const user = await userRepository.findOne({
+    where: { id: userId },
+    relations: {
+      apartment: true,
+      resident: true,
+    },
+  });
+
+  if (!user) {
+    throw new NotFoundError("사용자를 찾을 수 없습니다.");
+  }
+
+  // 투표 조회 (옵션 포함)
+  const poll = await pollRepository.findOne({
+    where: { pollId },
+    relations: {
+      user: true,
+      options: true,
+    },
+  });
+
+  if (!poll) {
+    throw new NotFoundError("투표를 찾을 수 없습니다.");
+  }
+
+  // 투표 게시판 정보 조회
+  const pollBoard = await pollBoardRepository.findOne({
+    where: { id: poll.boardId },
+    relations: {
+      apartment: true,
+    },
+  });
+
+  if (!pollBoard) {
+    throw new InternalServerError("투표 게시판 정보를 찾을 수 없습니다.");
+  }
+
+  // 같은 아파트 투표인지 확인
+  if (user.apartment?.id !== pollBoard.apartment?.id) {
+    throw new ForbiddenError("다른 아파트의 투표는 조회할 수 없습니다.");
+  }
+
+  // 일반 사용자(USER)인 경우 권한 확인
+  if (userRole === UserRole.USER) {
+    // buildingPermission이 설정된 경우, 해당 동 거주자만 조회 가능
+    if (
+      poll.buildingPermission !== undefined &&
+      poll.buildingPermission !== null
+    ) {
+      const userDong = user.resident ? parseInt(user.resident.dong) : null;
+
+      if (!userDong || userDong !== poll.buildingPermission) {
+        throw new ForbiddenError("해당 투표를 조회할 권한이 없습니다.");
+      }
+    }
+    // buildingPermission이 null이면 전체 입주민 조회 가능
+  }
+  // ADMIN이나 SUPER_ADMIN은 모든 투표 조회 가능
+
+  // 옵션 정보를 OptionResponse 형태로 변환
+  const optionsDto = poll.options.map(
+    (option: { id: any; title: any; voteCount: any }) => ({
+      id: option.id,
+      title: option.title,
+      voteCount: option.voteCount,
+    })
+  );
+
+  // 날짜를 ISO 문자열로 변환
+  const responseDto: PollDetailResponseDto = {
+    pollId: poll.pollId,
+    userId: poll.userId,
+    title: poll.title,
+    writerName: poll.writerName,
+    buildingPermission: poll.buildingPermission,
+    createdAt: poll.createdAt.toISOString(),
+    updatedAt: poll.updatedAt.toISOString(),
+    startDate: new Date(poll.startDate).toISOString(),
+    endDate: new Date(poll.endDate).toISOString(),
+    status: poll.status,
+    content: poll.content,
+    boardName: "주민투표 게시판", // 또는 pollBoard.apartment?.name + " 투표 게시판"
+    options: optionsDto,
+  };
+
+  return responseDto;
 };
