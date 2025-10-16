@@ -11,7 +11,11 @@ const mockTokenUtil = require("../../utils/token.util");
 const mockUserUtil = require("../../utils/user.util");
 const mockAllowMiddleware = require("../../middlewares/allow.middleware");
 
-import { handleCreatePoll, handleGetPolls } from "../polls.controller";
+import {
+  handleCreatePoll,
+  handleGetPolls,
+  handleGetPollDetail,
+} from "../polls.controller";
 
 const createTestApp = () => {
   const app = express();
@@ -20,6 +24,11 @@ const createTestApp = () => {
 
   // 직접 라우트 설정 (router 파일을 거치지 않음)
   app.get("/api/polls", mockAllowMiddleware.allow("USER"), handleGetPolls);
+  app.get(
+    "/api/polls/:pollId",
+    mockAllowMiddleware.allow("USER"),
+    handleGetPollDetail
+  );
   app.post("/api/polls", mockAllowMiddleware.allow("ADMIN"), handleCreatePoll);
 
   app.use(
@@ -620,6 +629,141 @@ describe("Polls API E2E Tests", () => {
           polls: [],
           totalCount: 0,
         });
+      });
+    });
+  });
+  describe("GET /api/polls/:pollId", () => {
+    let adminToken: string;
+    let userToken: string;
+
+    // 실제 UUID 형식으로 변경
+    const mockPollId = "550e8400-e29b-41d4-a716-446655440000";
+
+    beforeEach(() => {
+      adminToken = "admin-token";
+      userToken = "user-token";
+    });
+
+    describe("정상 조회 테스트", () => {
+      beforeEach(() => {
+        const mockUser = {
+          id: "user-123",
+          name: "일반사용자",
+          apartment: { id: "apt-123" },
+          resident: { dong: "101" },
+        };
+
+        const mockAdmin = {
+          id: "admin-123",
+          name: "관리자",
+          apartment: { id: "apt-123" },
+          resident: null,
+        };
+
+        const mockPoll = {
+          pollId: mockPollId, // 이제 실제 UUID 형식
+          userId: "author-123",
+          title: "아파트 외벽 도색 투표",
+          content: "외벽 도색 색상을 결정하는 투표입니다.",
+          writerName: "관리자A",
+          buildingPermission: 101,
+          boardId: "board-123",
+          createdAt: new Date("2024-01-01T10:00:00Z"),
+          updatedAt: new Date("2024-01-02T10:00:00Z"),
+          startDate: new Date("2024-01-10T00:00:00Z"),
+          endDate: new Date("2024-01-20T23:59:59Z"),
+          status: "IN_PROGRESS",
+          user: { id: "author-123", name: "관리자A" },
+          options: [
+            { id: "opt-1", title: "베이지색", voteCount: 15 },
+            { id: "opt-2", title: "회색", voteCount: 12 },
+            { id: "opt-3", title: "흰색", voteCount: 8 },
+          ],
+        };
+
+        const mockPollBoard = {
+          id: "board-123",
+          apartment: { id: "apt-123", name: "테스트 아파트" },
+        };
+
+        // Repository Mock 설정
+        jest
+          .spyOn(AppDataSource, "getRepository")
+          .mockImplementation((entity: any): any => {
+            const entityName =
+              typeof entity === "string" ? entity : entity?.name;
+
+            if (entityName === "User") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.id === "admin-123") {
+                    return Promise.resolve(mockAdmin);
+                  }
+                  if (options?.where?.id === "user-123") {
+                    return Promise.resolve(mockUser);
+                  }
+                  return Promise.resolve(null);
+                }),
+              };
+            }
+
+            if (entityName === "Poll") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.pollId === mockPollId) {
+                    return Promise.resolve(mockPoll);
+                  }
+                  return Promise.resolve(null);
+                }),
+              };
+            }
+
+            if (entityName === "PollBoard") {
+              return {
+                findOne: jest.fn().mockResolvedValue(mockPollBoard),
+              };
+            }
+
+            return {};
+          });
+      });
+
+      it("권한이 있는 사용자가 투표 상세를 조회할 수 있어야 함 - 디버깅", async () => {
+        // When
+        const response = await request(app)
+          .get(`/api/polls/${mockPollId}`)
+          .set("Cookie", [`access-token=${userToken}`]);
+
+        // 디버깅용 로그
+        console.log("Response status:", response.status);
+        console.log("Response body:", response.body);
+
+        // 400 에러일 경우 어떤 에러인지 확인
+        if (response.status === 400) {
+          console.log("Bad Request Error Message:", response.body.message);
+        }
+
+        expect(response.status).toBe(200);
+
+        // Then
+        if (response.status === 200) {
+          expect(response.body).toMatchObject({
+            pollId: mockPollId,
+            title: "아파트 외벽 도색 투표",
+            content: "외벽 도색 색상을 결정하는 투표입니다.",
+            writerName: "관리자A",
+            buildingPermission: 101,
+            status: "IN_PROGRESS",
+            boardName: "주민투표 게시판",
+            options: expect.arrayContaining([
+              expect.objectContaining({
+                id: "opt-1",
+                title: "베이지색",
+                voteCount: 15,
+              }),
+            ]),
+          });
+        }
       });
     });
   });

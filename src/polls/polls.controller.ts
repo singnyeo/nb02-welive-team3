@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { createPoll, getPolls } from "./polls.service";
+import { createPoll, getPolls, getPollDetail } from "./polls.service";
 import { CreatePollDto } from "./dto/create-poll.dto";
 import { validatePollQuery } from "./dto/poll-query-params.dto";
 import { BadRequestError } from "../types/error.type";
@@ -89,6 +89,43 @@ export const handleGetPolls = async (
     const result = await getPolls(userId, userRole, queryParams);
 
     res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 투표 상세 조회 핸들러
+ */
+export const handleGetPollDetail = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+    const { pollId } = req.params;
+
+    if (!userId) {
+      throw new BadRequestError("사용자 정보를 찾을 수 없습니다.");
+    }
+
+    if (!pollId) {
+      throw new BadRequestError("투표 ID가 필요합니다.");
+    }
+
+    // UUID 형식 검증 (선택사항)
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(pollId)) {
+      throw new BadRequestError("유효하지 않은 투표 ID 형식입니다.");
+    }
+
+    // 투표 상세 조회
+    const pollDetail = await getPollDetail(pollId, userId, userRole);
+
+    res.status(200).json(pollDetail);
   } catch (error) {
     next(error);
   }
