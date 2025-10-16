@@ -13,7 +13,7 @@ import {
 import { User } from './user.entity';
 import { Apartment } from './apartment.entity';
 
-export enum ResidentStatus {
+export enum ResidenceStatus {
   RESIDENCE = 'RESIDENCE',
   NO_RESIDENCE = 'NO_RESIDENCE',
 }
@@ -23,7 +23,7 @@ export enum HouseholdType {
   MEMBER = 'MEMBER',
 }
 
-@Entity('resident')
+@Entity('residents')
 export class Resident {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -55,12 +55,12 @@ export class Resident {
 
   @Column({
     type: 'enum',
-    enum: ResidentStatus,
-    default: ResidentStatus.RESIDENCE,
+    enum: ResidenceStatus,
+    default: ResidenceStatus.RESIDENCE,
     nullable: false,
     comment: '거주 여부',
   })
-  residentStatus!: ResidentStatus;
+  residenceStatus!: ResidenceStatus;
 
   @Column({ default: false, comment: '위리브 가입 여부' })
   isRegistered!: boolean;
@@ -84,7 +84,7 @@ export class Resident {
   apartmentId!: string;
 
   @DeleteDateColumn({ nullable: true })
-  deletedAt?: Date;
+  deletedAt?: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;

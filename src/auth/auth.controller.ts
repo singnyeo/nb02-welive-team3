@@ -44,6 +44,10 @@ import {
 } from '../utils/token.util';
 import { Payload } from '../types/payload.type';
 import { getUser } from '../utils/user.util';
+import { createNotification } from '../notofications/notifications.service';
+import { NotificationType } from '../entities/notification.entity';
+import { getApartment } from '../apartments/apartments.service';
+import { getSuperAdmin } from '../users/users.service';
 
 export const handleSignup: RequestHandler = async (req, res) => {
   const result = SignupRequestSchema.safeParse({ body: req.body });
@@ -61,6 +65,20 @@ export const handleSignup: RequestHandler = async (req, res) => {
     joinStatus: signedupUser.joinStatus,
     isActive: signedupUser.isActive,
   };
+
+  if (signedupUser.apartmentId) {
+    const apartment = await getApartment(signedupUser.apartmentId);
+    const adminId = apartment?.adminId;
+
+    if (adminId) {
+      await createNotification(
+        [adminId],
+        `${signedupUser.name}님이 회원가입을 요청했습니다.`,
+        NotificationType.SIGNUP_REQ
+      );
+    }
+  }
+
   res.status(201).json(response);
 };
 
@@ -80,6 +98,16 @@ export const handleSignupAdmin: RequestHandler = async (req, res) => {
     joinStatus: signedupUser.joinStatus,
     isActive: signedupUser.isActive,
   };
+
+  const superAdmin = await getSuperAdmin();
+  if (superAdmin) {
+    await createNotification(
+      [superAdmin.id],
+      `${signedupUser.name} 관리자 계정이 새로 생성되었습니다.`,
+      NotificationType.SIGNUP_REQ
+    );
+  }
+
   res.status(201).json(response);
 };
 

@@ -1,4 +1,4 @@
-import { User } from '../entities/user.entity';
+import { User, UserRole } from '../entities/user.entity';
 import { BadRequestError, NotFoundError } from '../types/error.type';
 import { AppDataSource } from '../config/data-source';
 import { comparePassword, hashPassword } from '../utils/password.util';
@@ -33,4 +33,17 @@ export const updateMe = async (
 
   await userRepository.save(user);
   return user;
+};
+
+export const getUserById = async (id: string) => {
+  const user = await userRepository.findOne({ where: { id } });
+  if (!user) {
+    throw new NotFoundError('존재하지 않는 사용자입니다.');
+  }
+  return user;
+};
+
+export const getSuperAdmin = async () => {
+  const superAdmin = await userRepository.findOne({ where: { role: UserRole.SUPER_ADMIN } });
+  return superAdmin;
 };
