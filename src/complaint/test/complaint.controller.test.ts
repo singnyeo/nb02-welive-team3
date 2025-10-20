@@ -10,8 +10,8 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-jest.mock("./complaint.service");
-jest.mock("./complaint.schema");
+jest.mock("../complaint.service");
+jest.mock("../complaint.schema");
 
 describe("Complaint Controller", () => {
   let mockRequest: Partial<AuthenticatedRequest>;
@@ -40,12 +40,12 @@ describe("Complaint Controller", () => {
 
   describe("handleCreateComplaint", () => {
     it("정상적으로 민원을 등록해야 함", async () => {
-      // Given
       const mockData = {
         title: "테스트 민원",
         content: "민원 내용",
         isPublic: true,
         boardId: "board-123",
+        status: "PENDING" as const,
       };
       mockRequest.body = mockData;
       mockRequest.user = { id: "user-123" };
@@ -53,13 +53,11 @@ describe("Complaint Controller", () => {
       (schema.createComplaintSchema.parse as jest.Mock).mockReturnValue(mockData);
       (service.createComplaintService as jest.Mock).mockResolvedValue({});
 
-      // When
       await controller.handleCreateComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(schema.createComplaintSchema.parse).toHaveBeenCalledWith(mockData);
       expect(service.createComplaintService).toHaveBeenCalledWith(mockData, "user-123");
       expect(mockStatus).toHaveBeenCalledWith(201);
@@ -69,17 +67,20 @@ describe("Complaint Controller", () => {
     });
 
     it("인증되지 않은 사용자는 401을 반환해야 함", async () => {
-      // Given
-      mockRequest.body = { title: "테스트" };
+      mockRequest.body = {
+        title: "테스트",
+        content: "내용",
+        isPublic: true,
+        boardId: "board-123",
+        status: "PENDING" as const,
+      };
       mockRequest.user = undefined;
 
-      // When
       await controller.handleCreateComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.createComplaintService).not.toHaveBeenCalled();
       expect(mockStatus).toHaveBeenCalledWith(401);
       expect(mockJson).toHaveBeenCalledWith({
@@ -90,7 +91,6 @@ describe("Complaint Controller", () => {
 
   describe("handleGetComplaints", () => {
     it("기본 페이지네이션으로 민원 목록을 조회해야 함", async () => {
-      // Given
       mockRequest.query = {};
       const mockData = {
         complaints: [],
@@ -98,19 +98,16 @@ describe("Complaint Controller", () => {
       };
       (service.getComplaintsService as jest.Mock).mockResolvedValue(mockData);
 
-      // When
       await controller.handleGetComplaints(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.getComplaintsService).toHaveBeenCalledWith(1, 10);
       expect(mockJson).toHaveBeenCalledWith(mockData);
     });
 
     it("쿼리 파라미터로 페이지와 limit을 설정할 수 있어야 함", async () => {
-      // Given
       mockRequest.query = { page: "2", limit: "20" };
       const mockData = {
         complaints: [],
@@ -118,20 +115,17 @@ describe("Complaint Controller", () => {
       };
       (service.getComplaintsService as jest.Mock).mockResolvedValue(mockData);
 
-      // When
       await controller.handleGetComplaints(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.getComplaintsService).toHaveBeenCalledWith(2, 20);
     });
   });
 
   describe("handleGetComplaint", () => {
     it("민원 상세 정보를 조회해야 함", async () => {
-      // Given
       const complaintId = "complaint-123";
       mockRequest.params = { complaintId };
       const mockComplaint = {
@@ -140,29 +134,24 @@ describe("Complaint Controller", () => {
       };
       (service.getComplaintByIdService as jest.Mock).mockResolvedValue(mockComplaint);
 
-      // When
       await controller.handleGetComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.getComplaintByIdService).toHaveBeenCalledWith(complaintId);
       expect(mockJson).toHaveBeenCalledWith(mockComplaint);
     });
 
     it("민원이 존재하지 않으면 404를 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "non-existent" };
       (service.getComplaintByIdService as jest.Mock).mockResolvedValue(null);
 
-      // When
       await controller.handleGetComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(404);
       expect(mockJson).toHaveBeenCalledWith({
         message: "해당 민원을 찾을 수 없습니다.",
@@ -172,7 +161,6 @@ describe("Complaint Controller", () => {
 
   describe("handleUpdateComplaint", () => {
     it("정상적으로 민원을 수정해야 함", async () => {
-      // Given
       const complaintId = "complaint-123";
       const updateData = { title: "수정된 제목" };
       mockRequest.params = { complaintId };
@@ -182,13 +170,11 @@ describe("Complaint Controller", () => {
       (schema.updateComplaintSchema.parse as jest.Mock).mockReturnValue(updateData);
       (service.updateComplaintService as jest.Mock).mockResolvedValue({});
 
-      // When
       await controller.handleUpdateComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.updateComplaintService).toHaveBeenCalledWith(
         complaintId,
         updateData,
@@ -200,18 +186,15 @@ describe("Complaint Controller", () => {
     });
 
     it("인증되지 않은 사용자는 401을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.body = { title: "수정" };
       mockRequest.user = undefined;
 
-      // When
       await controller.handleUpdateComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(401);
       expect(mockJson).toHaveBeenCalledWith({
         message: "인증이 필요합니다.",
@@ -219,7 +202,6 @@ describe("Complaint Controller", () => {
     });
 
     it("권한이 없으면 403을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.body = { title: "수정" };
       mockRequest.user = { id: "user-123" };
@@ -229,13 +211,11 @@ describe("Complaint Controller", () => {
         new Error("수정 권한이 없습니다.")
       );
 
-      // When
       await controller.handleUpdateComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(403);
       expect(mockJson).toHaveBeenCalledWith({
         message: "수정 권한이 없습니다.",
@@ -245,20 +225,17 @@ describe("Complaint Controller", () => {
 
   describe("handleDeleteComplaint", () => {
     it("정상적으로 민원을 삭제해야 함", async () => {
-      // Given
       const complaintId = "complaint-123";
       mockRequest.params = { complaintId };
       mockRequest.user = { id: "user-123" };
 
       (service.deleteComplaintService as jest.Mock).mockResolvedValue({});
 
-      // When
       await controller.handleDeleteComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.deleteComplaintService).toHaveBeenCalledWith(
         complaintId,
         "user-123"
@@ -269,22 +246,18 @@ describe("Complaint Controller", () => {
     });
 
     it("인증되지 않은 사용자는 401을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.user = undefined;
 
-      // When
       await controller.handleDeleteComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(401);
     });
 
     it("권한이 없으면 403을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.user = { id: "user-123" };
 
@@ -292,13 +265,11 @@ describe("Complaint Controller", () => {
         new Error("삭제 권한이 없습니다.")
       );
 
-      // When
       await controller.handleDeleteComplaint(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(403);
       expect(mockJson).toHaveBeenCalledWith({
         message: "삭제 권한이 없습니다.",
@@ -308,7 +279,6 @@ describe("Complaint Controller", () => {
 
   describe("handleUpdateComplaintStatus", () => {
     it("관리자가 민원 상태를 변경할 수 있어야 함", async () => {
-      // Given
       const complaintId = "complaint-123";
       const statusData = { status: "IN_PROGRESS" };
       mockRequest.params = { complaintId };
@@ -322,13 +292,11 @@ describe("Complaint Controller", () => {
         mockUpdatedComplaint
       );
 
-      // When
       await controller.handleUpdateComplaintStatus(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(service.updateComplaintStatusService).toHaveBeenCalledWith(
         complaintId,
         statusData,
@@ -341,23 +309,19 @@ describe("Complaint Controller", () => {
     });
 
     it("인증되지 않은 사용자는 401을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.body = { status: "IN_PROGRESS" };
       mockRequest.user = undefined;
 
-      // When
       await controller.handleUpdateComplaintStatus(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(401);
     });
 
     it("관리자가 아닌 사용자는 403을 반환해야 함", async () => {
-      // Given
       mockRequest.params = { complaintId: "complaint-123" };
       mockRequest.body = { status: "IN_PROGRESS" };
       mockRequest.user = { role: "USER" };
@@ -369,13 +333,11 @@ describe("Complaint Controller", () => {
         new Error("상태 변경 권한이 없습니다.")
       );
 
-      // When
       await controller.handleUpdateComplaintStatus(
         mockRequest as AuthenticatedRequest,
         mockResponse as Response
       );
 
-      // Then
       expect(mockStatus).toHaveBeenCalledWith(403);
       expect(mockJson).toHaveBeenCalledWith({
         message: "상태 변경 권한이 없습니다.",
