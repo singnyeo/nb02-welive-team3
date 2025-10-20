@@ -1,7 +1,7 @@
-import { createResident, createResidentFromUser, getResidentList, residentListDetail, updateResident } from '../resident.service';
+import { createResident, createResidentFromUser, getResidentList, residentListDetail, updateResident, deleteResident } from '../resident.service';
 import { AppDataSource } from '../../config/data-source';
 import { HouseholdType, Resident, ResidenceStatus } from '../../entities/resident.entity';
-import { ConflictError } from '../../types/error.type';
+import { ConflictError, NotFoundError } from '../../types/error.type';
 import { CreateResidentDto } from '../dtos/create-resident.dto';
 import { Apartment } from '../../entities/apartment.entity';
 import { User } from '../../entities/user.entity';
@@ -430,5 +430,102 @@ describe('입주민 정보 수정 updateResident', () => {
 });
 
 // 입주민 삭제 deleteResident
+describe('입주민 소프트 삭제 deleteResident', () => {
+  const residentIdMock = 'resident -1';
+  const apartmentIdMock = 'apartment-1';
+
+  const existingResident = {
+    id: residentIdMock,
+    building: '101',
+    unitNumber: '1001',
+    contact: '010-1234-5678',
+    name: '김길동',
+    isHouseholder: HouseholdType.HOUSEHOLDER,
+    isRegistered: true,
+    residenceStatus: ResidenceStatus.RESIDENCE,
+    user: {
+      id: 'user-1',
+      email: 'test@example.com',
+      joinStatus: 'APPROVED',
+    } as User,
+  } as Resident;
+
+  let residentRepository: any;
+  let userRepository: any;
+  let mockQueryRunner: any;
+
+
+  beforeEach(() => {
+    residentRepository = {
+      findOne: jest.fn(),
+      softRemove: jest.fn()
+    };
+    userRepository = {
+      softRemove: jest.fn(),
+    }
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        getRepository: jest
+          .fn()
+          .mockImplementation((entity) => {
+            if (entity === Resident) return residentRepository;
+            if (entity === User) return userRepository;
+          }),
+      },
+    },
+      (AppDataSource.createQueryRunner as jest.Mock).mockReturnValue(mockQueryRunner);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  })
+
+  test('입주민과 유저가 존재하면 softremove', async () => {
+    residentRepository.findOne.mockResolvedValueOnce(existingResident)
+
+    await deleteResident(residentIdMock, apartmentIdMock);
+
+    expect(mockQueryRunner.connect).toHaveBeenCalled();
+    expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+    expect(residentRepository.findOne).toHaveBeenLastCalledWith({
+      where: {
+        id: residentIdMock,
+        apartment: { id: apartmentIdMock },
+      },
+      relations: ['user'],
+    });
+
+    expect(userRepository.softRemove).toHaveBeenCalledWith(existingResident.user);
+    expect(residentRepository.softRemove).toHaveBeenLastCalledWith(existingResident);
+
+    expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+
+  test('입주민이 존재하지 않으면 NotFoundError 발생', async () => {
+    residentRepository.findOne.mockImplementation(null);
+
+    await expect(deleteResident(residentIdMock, apartmentIdMock)).rejects.toThrow(NotFoundError);
+
+    expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+
+  test('입주민 삭제 중 예외 발생 시 롤백', async () => {
+    residentRepository.findOne.mockResolvedValueOnce(existingResident);
+    userRepository.softRemove.mockRejectedValue(new Error('db 오류'));
+
+    await expect(deleteResident(residentIdMock, apartmentIdMock)).rejects.toThrow('db 오류');
+
+    expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+});
+
 // 입주민 명부 csv 파일 업로드
 
