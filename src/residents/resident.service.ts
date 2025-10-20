@@ -152,44 +152,52 @@ export const registerResidentsFromCsv = async (
 
   // 유효성 검사
   const validRows: CsvResidentDto[] = [];
-  const invaildRows: { row: number; errors: string }[] = [];
+  const invalidRows: { row: number; errors: string }[] = [];
 
   parsedRows.forEach((row, index) => {
     const result = csvResidentSchema.safeParse(row);
     if (result.success) {
       validRows.push(result.data);
     } else {
-      invaildRows.push({ row: index + 1, errors: result.error.message });
+      invalidRows.push({ row: index + 1, errors: result.error.message });
     }
   });
 
-  if (invaildRows.length > 0) {
-    const errorMessages = invaildRows.map(r => `Row ${r.row}: ${r.errors}`).join('; ');
+  if (invalidRows.length > 0) {
+    const errorMessages = invalidRows.map(r => `Row ${r.row}: ${r.errors}`).join('; ');
     throw new ConflictError(`CSV 파일에 유효하지 않은 데이터가 포함되어 있습니다. ${errorMessages}`);
   }
 
   // 중복 검사 key: 동, 호수, 이름
-  // 기존에 등록된 입주민과 비교하여 중복 제거
   const keys = parsedRows.map(row => ({
     building: row.building,
     unitNumber: row.unitNumber,
     name: row.name,
   }));
 
-  // 동, 호수, 이름 기준으로 기존 입주민 조회
-  const existingResidents = await repository
-    .createQueryBuilder('resident')
-    .where('resident.apartmentId = :apartmentId', { apartmentId: apartment.id })
-    .andWhere('(resident.building, resident.unitNumber, resident.name) IN (:...keys)',
-      { keys: keys.map(k => [k.building, k.unitNumber, k.name]) }
-    )
-    .getMany(); // 배열로 반환
+  // 기존 입주민 조회 쿼리 구성 (OR 조건)
+  const qb = repository.createQueryBuilder('resident')
+    .where('resident.apartmentId = :apartmentId', { apartmentId: apartment.id });
+
+  keys.forEach((key, index) => {
+    qb.orWhere(
+      `(resident.building = :building${index} AND resident.unitNumber = :unitNumber${index} AND resident.name = :name${index})`,
+      {
+        [`building${index}`]: key.building,
+        [`unitNumber${index}`]: key.unitNumber,
+        [`name${index}`]: key.name,
+      }
+    );
+  });
+
+  const existingResidents = await qb.getMany();
 
   // 조회된 기존 입주민을 Set으로 변환
   const existingSet = new Set(
     existingResidents.map(resident =>
       `${resident.building}-${resident.unitNumber}-${resident.name}`
-    ));
+    )
+  );
 
   // 중복되지 않은 입주민만 데이터베이스에 저장
   const insertRows = parsedRows
@@ -207,8 +215,9 @@ export const registerResidentsFromCsv = async (
       .createQueryBuilder()
       .insert()
       .values(insertRows)
-      .execute(); // 한 번만 호출 
+      .execute();
   }
+
   return { count: insertRows.length };
 };
 
@@ -217,6 +226,7 @@ export const registerResidentsFromCsv = async (
  */
 export const getResidentList = async (params: GetResidentListParams) => {
   const repository = AppDataSource.getRepository(Resident);
+
 
   const query = repository
     .createQueryBuilder('resident')
@@ -232,8 +242,13 @@ export const getResidentList = async (params: GetResidentListParams) => {
   if (params.residenceStatus) {
     query.andWhere('resident.residenceStatus = :residenceStatus', { residenceStatus: params.residenceStatus });
   }
-  if (params.isRegistered !== undefined) {
-    query.andWhere('resident.isRegistered = :isRegistered', { isRegistered: params.isRegistered });
+  if (params.isRegistered === false) {
+    query.andWhere('resident.isRegistered = :isRegistered', { isRegistered: false });
+  }
+  if (typeof params.isRegistered === 'boolean') {
+    query.andWhere('resident.isRegistered = :isRegistered', {
+      isRegistered: params.isRegistered,
+    });
   }
   if (params.name) { // 이름 검색
     query.andWhere('resident.name LIKE :name', { name: `%${params.name}%` });
@@ -265,6 +280,29 @@ export const getResidentList = async (params: GetResidentListParams) => {
   }));
 }
 
+/**
+ * 입주민 목록 파일 다운로드
+ */
+
+export const residentListCsv = async (apartmentId: string): Promise<string> => {
+  const repository = AppDataSource.getRepository(Resident);
+
+  const residents = await repository.find({
+    where: { apartment: { id: apartmentId } },
+    order: {
+      building: 'ASC',
+      unitNumber: 'ASC',
+    }
+  });
+
+  const header = `"동","호수","이름","연락처","세대주 여부"`;
+  const rows = residents.map(resident => {
+    const householder = resident.isHouseholder ? "HOUSEHOLDER" : "MEMBER";
+    return `"${resident.building}","${resident.unitNumber}","${resident.name}","${resident.contact}","${householder}"`;
+  });
+
+  return '\uFEFF' + [header, ...rows].join('\n');
+};
 
 /**
  * 입주민 상세 조회
