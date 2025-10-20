@@ -26,7 +26,7 @@ app.use(cookieParser());
 
 app.use('/api', root);
 app.use('/api/auth', auth);
-app.use('/api/residents', resident);
+app.use('/residents', resident);
 app.use('/api/apartments', apartments);
 app.use('/api/notifications', notifications);
 app.use('/api/users', users);
