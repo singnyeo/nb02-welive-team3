@@ -23,11 +23,13 @@ complaint.post('/', allow(AllowedRole.USER), handleCreateComplaint);
  */
 complaint.get('/', allow(AllowedRole.USER), handleGetComplaints);
 
+
 /**
  * 민원 상세 조회
  * GET /api/complaints/:complaintId
  */
 complaint.get('/:complaintId', allow(AllowedRole.USER), handleGetComplaint);
+
 
 /**
  * 민원 수정
@@ -35,11 +37,13 @@ complaint.get('/:complaintId', allow(AllowedRole.USER), handleGetComplaint);
  */
 complaint.patch('/:complaintId', allow(AllowedRole.USER), handleUpdateComplaint);
 
+
 /**
  * 민원 삭제
  * DELETE /api/complaints/:complaintId
  */
 complaint.delete('/:complaintId', allow(AllowedRole.USER), handleDeleteComplaint);
+
 
 /**
  * 민원 상태 수정
