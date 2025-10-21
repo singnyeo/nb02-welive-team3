@@ -4,9 +4,9 @@ import { AppDataSource } from '../config/data-source';
 import { Apartment } from '../entities/apartment.entity';
 import { ILike } from 'typeorm';
 
-const apartmentRepository = AppDataSource.getRepository(Apartment);
-
 export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQuerySchema>) => {
+  const apartmentRepository = AppDataSource.getRepository(Apartment);
+
   const { name, address } = query || {};
 
   const apartments = await apartmentRepository.find({
@@ -14,8 +14,6 @@ export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQ
     relations: ['users'],
     withDeleted: false,
   });
-
-  console.log('Apartments:', apartments);
 
   const formattedApartments = apartments.map((apartment) => {
     const admin = apartment.users.find((u) => u.id === apartment.adminId);
@@ -46,6 +44,8 @@ export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQ
 };
 
 export const getApartment = async (params: z.infer<typeof ApartmentsRequestParamsSchema>) => {
+  const apartmentRepository = AppDataSource.getRepository(Apartment);
+
   const { id } = params;
 
   const apartment = await apartmentRepository.findOne({
