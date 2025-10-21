@@ -6,6 +6,7 @@ import { PollQueryParams } from "./dto/poll-query-params.dto";
 import { PollsListWrapperDto } from "./dto/poll-list-wrapper.dto";
 import { PollListResponseDto } from "./dto/poll-list-response.dto";
 import { PollDetailResponseDto } from "./dto/poll-detail-response.dto";
+import { UpdatePollDto } from "./dto/update-poll.dto";
 // import { OptionResponse } from "./dto/option-response.dto";
 import { UserRole } from "../entities/user.entity";
 import {
@@ -318,4 +319,197 @@ export const getPollDetail = async (
   };
 
   return responseDto;
+};
+
+/**
+ * 투표 수정
+ */
+export const updatePoll = async (
+  pollId: string,
+  userId: string,
+  userRole: string,
+  updateData: UpdatePollDto
+): Promise<void> => {
+  const pollRepository = AppDataSource.getRepository("Poll");
+  const pollOptionRepository = AppDataSource.getRepository("PollOption");
+  const userRepository = AppDataSource.getRepository("User");
+
+  // 권한 확인 - 관리자만 수정 가능
+  if (userRole !== UserRole.ADMIN && userRole !== UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError("투표 수정 권한이 없습니다.");
+  }
+
+  // 사용자 정보 확인
+  const user = await userRepository.findOne({
+    where: { id: userId },
+    relations: { apartment: true },
+  });
+
+  if (!user || !user.apartment) {
+    throw new NotFoundError("사용자 정보를 찾을 수 없습니다.");
+  }
+
+  // 투표 정보 조회
+  const poll = await pollRepository.findOne({
+    where: { pollId },
+    relations: ["options"],
+  });
+
+  if (!poll) {
+    throw new NotFoundError("투표를 찾을 수 없습니다.");
+  }
+
+  // 같은 아파트의 투표인지 확인 (SUPER_ADMIN은 제외)
+  if (userRole !== UserRole.SUPER_ADMIN) {
+    const pollBoardRepository = AppDataSource.getRepository("PollBoard");
+    const pollBoard = await pollBoardRepository.findOne({
+      where: { id: poll.boardId },
+    });
+
+    if (!pollBoard || pollBoard.apartmentId !== user.apartment.id) {
+      throw new ForbiddenError("다른 아파트의 투표는 수정할 수 없습니다.");
+    }
+  }
+
+  // 투표가 이미 시작된 경우 수정 불가
+  const now = new Date();
+  const startDate = new Date(poll.startDate);
+
+  if (now >= startDate) {
+    throw new BadRequestError("이미 시작된 투표는 수정할 수 없습니다.");
+  }
+
+  // buildingPermission 유효성 검사 (설정된 경우)
+  if (
+    updateData.buildingPermission !== undefined &&
+    updateData.buildingPermission !== null
+  ) {
+    const apartmentRepository = AppDataSource.getRepository("Apartment");
+    const apartment = await apartmentRepository.findOne({
+      where: { id: user.apartment.id },
+    });
+
+    if (apartment) {
+      const startDong = parseInt(apartment.startDongNumber);
+      const endDong = parseInt(apartment.endDongNumber);
+
+      if (
+        updateData.buildingPermission < startDong ||
+        updateData.buildingPermission > endDong
+      ) {
+        throw new BadRequestError(
+          `유효하지 않은 동 번호입니다. (${startDong}동 ~ ${endDong}동 범위 내)`
+        );
+      }
+    }
+  }
+
+  // 날짜 유효성 검사
+  const newStartDate = new Date(updateData.startDate);
+  const newEndDate = new Date(updateData.endDate);
+
+  if (newEndDate <= newStartDate) {
+    throw new BadRequestError("종료일은 시작일보다 늦어야 합니다.");
+  }
+
+  // 트랜잭션으로 투표 및 옵션 수정
+  const queryRunner = AppDataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // 투표 정보 업데이트
+    await queryRunner.manager.update(Poll, pollId, {
+      title: updateData.title,
+      content: updateData.content,
+      buildingPermission: updateData.buildingPermission,
+      startDate: newStartDate,
+      endDate: newEndDate,
+      status: updateData.status,
+    });
+
+    // 옵션 처리 (있는 경우)
+    if (updateData.options && Array.isArray(updateData.options)) {
+      // 기존 옵션 삭제
+      await queryRunner.manager.delete(PollOption, { pollId });
+
+      // 새 옵션 추가
+      const newOptions = updateData.options.map((option: any) => {
+        return pollOptionRepository.create({
+          title: option.title,
+          voteCount: 0,
+          pollId: pollId,
+        });
+      });
+
+      await queryRunner.manager.save(PollOption, newOptions);
+    }
+
+    await queryRunner.commitTransaction();
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    console.error("Poll update error:", error);
+    throw new InternalServerError("투표 수정 중 오류가 발생했습니다.");
+  } finally {
+    await queryRunner.release();
+  }
+};
+
+/**
+ * 투표 삭제
+ */
+export const deletePoll = async (
+  pollId: string,
+  userId: string,
+  userRole: string
+): Promise<void> => {
+  const pollRepository = AppDataSource.getRepository("Poll");
+  const userRepository = AppDataSource.getRepository("User");
+
+  // 권한 확인 - 관리자만 삭제 가능
+  if (userRole !== UserRole.ADMIN && userRole !== UserRole.SUPER_ADMIN) {
+    throw new ForbiddenError("투표 삭제 권한이 없습니다.");
+  }
+
+  // 사용자 정보 확인
+  const user = await userRepository.findOne({
+    where: { id: userId },
+    relations: { apartment: true },
+  });
+
+  if (!user || !user.apartment) {
+    throw new NotFoundError("사용자 정보를 찾을 수 없습니다.");
+  }
+
+  // 투표 정보 조회
+  const poll = await pollRepository.findOne({
+    where: { pollId },
+  });
+
+  if (!poll) {
+    throw new NotFoundError("투표를 찾을 수 없습니다.");
+  }
+
+  // 같은 아파트의 투표인지 확인 (SUPER_ADMIN은 제외)
+  if (userRole !== UserRole.SUPER_ADMIN) {
+    const pollBoardRepository = AppDataSource.getRepository("PollBoard");
+    const pollBoard = await pollBoardRepository.findOne({
+      where: { id: poll.boardId },
+    });
+
+    if (!pollBoard || pollBoard.apartmentId !== user.apartment.id) {
+      throw new ForbiddenError("다른 아파트의 투표는 삭제할 수 없습니다.");
+    }
+  }
+
+  // 투표가 이미 시작된 경우 삭제 불가
+  const now = new Date();
+  const startDate = new Date(poll.startDate);
+
+  if (now >= startDate) {
+    throw new BadRequestError("이미 시작된 투표는 삭제할 수 없습니다.");
+  }
+
+  // 투표 삭제 (cascade로 옵션도 함께 삭제됨)
+  await pollRepository.delete({ pollId });
 };
