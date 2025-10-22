@@ -1,4 +1,4 @@
-/* import {
+import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
@@ -125,4 +125,3 @@ export class Notification {
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt!: Date;
 }
- */
