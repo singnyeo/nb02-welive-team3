@@ -15,6 +15,7 @@ import {
   UpdateAdminRequestSchema,
   UpdateAdminsStatusRequestSchema,
   UpdateAdminStatusRequestSchema,
+  UpdateResidentsStatusRequestSchema,
 } from './auth.dto';
 import { BadRequestError, UnauthorizedError } from '../types/error.type';
 import {
@@ -31,6 +32,8 @@ import {
   updateAdmin,
   updateAdminsStatus,
   updateAdminStatus,
+  updateResidentsStatus,
+  updateResidentStatus,
 } from './auth.service';
 import z from 'zod';
 import {
@@ -251,12 +254,38 @@ export const handleUpdateAdminsStatus: RequestHandler = async (req, res) => {
   res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
-export const handleUpdateResidentStatus: RequestHandler = (_req, res) => {
-  res.status(200).send('handleUpdateResidentStatus');
+export const handleUpdateResidentStatus: RequestHandler = async (req, res) => {
+  const result = UpdateAdminStatusRequestSchema.safeParse({
+    params: req.params,
+    body: req.body,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { id } = result.data.params;
+  const { status } = result.data.body;
+
+  await updateResidentStatus(id, status);
+
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
-export const handleUpdateResidentsStatus: RequestHandler = (_req, res) => {
-  res.status(200).send('handleUpdateResidentsStatus');
+export const handleUpdateResidentsStatus: RequestHandler = async (req, res) => {
+  const result = UpdateResidentsStatusRequestSchema.safeParse({
+    body: req.body,
+  });
+
+  if (!result.success) {
+    throw new BadRequestError('잘못된 요청(필수사항 누락 또는 잘못된 입력값)입니다');
+  }
+
+  const { status } = result.data.body;
+
+  await updateResidentsStatus(status);
+
+  res.status(200).send({ message: '작업이 성공적으로 완료되었습니다' });
 };
 
 export const handleUpdateAdmin: RequestHandler = async (req, res) => {
