@@ -20,7 +20,17 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPattern=\\.test\\.ts$",
     "test:e2e": "jest --testPathPattern=\\.e2e\\.test\\.ts$",
-    "test:polls": "jest src/polls --coverage"
+    "test:polls": "jest src/polls --coverage",
+    "test:auth": "jest src/auth/test --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:login": "jest src/auth/test/login.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:super-admin": "jest src/auth/test/signup.super-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:admin": "jest src/auth/test/signup.admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:user": "jest src/auth/test/signup.user.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:cleanup:admin": "jest src/auth/test/cleanup.admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:cleanup:resident": "jest src/auth/test/cleanup.resident.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:delete": "jest src/auth/test/delete-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:apartments": "jest src/apartments/test/apartments.service.spec.ts --runInBand --setupFilesAfterEnv ./src/apartments/test/setup.ts",
+    "test:users": "jest src/users/test/users.service.spec.ts --runInBand --setupFilesAfterEnv ./src/users/test/setup.ts"
   },
   "repository": {
     "type": "git",
@@ -65,6 +75,7 @@
     "@types/socket.io": "^3.0.1",
     "@types/streamifier": "^0.1.2",
     "@types/supertest": "^6.0.3",
+    "cross-env": "^10.1.0",
     "@types/uuid": "^10.0.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",

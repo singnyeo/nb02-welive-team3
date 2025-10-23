@@ -4,14 +4,13 @@ import { AppDataSource } from '../config/data-source';
 import { comparePassword, hashPassword } from '../utils/password.util';
 import { uploadImage } from '../utils/file.util';
 
-const userRepository = AppDataSource.getRepository(User);
-
 export const updateMe = async (
   id: string,
   currentPassword?: string,
   newPassword?: string,
   file?: Express.Multer.File
 ) => {
+  const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({ where: { id } });
   if (!user) {
     throw new NotFoundError('존재하지 않는 사용자입니다.');
@@ -36,6 +35,7 @@ export const updateMe = async (
 };
 
 export const getUserById = async (id: string) => {
+  const userRepository = AppDataSource.getRepository(User);
   const user = await userRepository.findOne({ where: { id } });
   if (!user) {
     throw new NotFoundError('존재하지 않는 사용자입니다.');
@@ -44,6 +44,7 @@ export const getUserById = async (id: string) => {
 };
 
 export const getSuperAdmin = async () => {
+  const userRepository = AppDataSource.getRepository(User);
   const superAdmin = await userRepository.findOne({ where: { role: UserRole.SUPER_ADMIN } });
   return superAdmin;
 };
