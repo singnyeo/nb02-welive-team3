@@ -27,7 +27,7 @@ export const createPoll = async (
   const userRepository = AppDataSource.getRepository("User");
   const pollRepository = AppDataSource.getRepository("Poll");
   const pollOptionRepository = AppDataSource.getRepository("PollOption");
-  const apartmentRepository = AppDataSource.getRepository("Apartment");
+  //const apartmentRepository = AppDataSource.getRepository("Apartment");
 
   // 사용자 정보 조회 (apartment, pollBoard 정보 포함)
   const user = await userRepository.findOne({
@@ -52,22 +52,24 @@ export const createPoll = async (
   }
 
   // buildingPermission 유효성 검사 (설정된 경우)
+  // 0이면 전체 공개이므로 검증 안 함
   if (
     data.buildingPermission !== undefined &&
-    data.buildingPermission !== null
+    data.buildingPermission !== null &&
+    data.buildingPermission !== 0 // 👈 이 줄 추가
   ) {
+    const apartmentRepository = AppDataSource.getRepository("Apartment");
     const apartment = await apartmentRepository.findOne({
       where: { id: user.apartment.id },
     });
 
     if (apartment) {
+      const dongNumber = data.buildingPermission % 100; // 👈 이 줄 수정
       const startDong = parseInt(apartment.startDongNumber);
       const endDong = parseInt(apartment.endDongNumber);
 
-      if (
-        data.buildingPermission < startDong ||
-        data.buildingPermission > endDong
-      ) {
+      if (dongNumber < startDong || dongNumber > endDong) {
+        // 👈 이 줄 수정
         throw new BadRequestError(
           `유효하지 않은 동 번호입니다. (${startDong}동 ~ ${endDong}동 범위 내)`
         );
@@ -144,80 +146,102 @@ export const getPolls = async (
   const skip = (queryParams.page - 1) * queryParams.limit;
   const take = queryParams.limit;
 
-  // 사용자 정보 조회
-  const user = await userRepository.findOne({
-    where: { id: userId },
-    relations: {
-      apartment: true,
-      residences: true,
-    },
-  });
+  try {
+    // 사용자 정보 조회
+    const user = await userRepository.findOne({
+      where: { id: userId },
+      relations: {
+        apartment: true,
+        resident: true,
+      },
+    });
 
-  if (!user) {
-    throw new NotFoundError("사용자를 찾을 수 없습니다.");
-  }
-
-  if (!user.apartment) {
-    throw new ForbiddenError("아파트 정보가 없는 사용자입니다.");
-  }
-
-  // 쿼리 빌더 생성
-  const queryBuilder = pollRepository
-    .createQueryBuilder("poll")
-    .leftJoinAndSelect("poll.user", "user")
-    .where(
-      "poll.boardId IN (SELECT id FROM poll_boards WHERE apartmentId = :apartmentId)",
-      {
-        apartmentId: user.apartment.id,
-      }
-    );
-
-  // 일반 사용자(USER)인 경우 권한 필터링 추가
-  if (userRole === "USER") {
-    // 사용자의 거주지 동 번호 가져오기
-    const userDongNumbers =
-      user.residences?.map((residence: any) => parseInt(residence.dong)) || [];
-
-    if (userDongNumbers.length > 0) {
-      // buildingPermission이 null(전체) 또는 사용자의 동 번호와 일치하는 투표만
-      queryBuilder.andWhere(
-        "(poll.buildingPermission IS NULL OR poll.buildingPermission IN (:...dongNumbers))",
-        { dongNumbers: userDongNumbers }
-      );
-    } else {
-      // 거주지 정보가 없으면 전체 공개 투표만
-      queryBuilder.andWhere("poll.buildingPermission IS NULL");
+    if (!user) {
+      throw new NotFoundError("사용자를 찾을 수 없습니다.");
     }
+
+    if (!user.apartment) {
+      throw new ForbiddenError("아파트 정보가 없는 사용자입니다.");
+    }
+
+    // 쿼리 빌더 생성
+    const queryBuilder = pollRepository
+      .createQueryBuilder("poll")
+      .leftJoinAndSelect("poll.user", "user")
+      .where(
+        'poll."boardId"::uuid IN (SELECT id FROM poll_boards WHERE "apartmentId" = :apartmentId)',
+        {
+          apartmentId: user.apartment.id,
+        }
+      );
+
+    // 일반 사용자(USER)인 경우 권한 필터링 추가
+    if (userRole === "USER") {
+      // 사용자의 거주지 동 번호 가져오기
+      const userDongNumber = user.resident
+        ? parseInt(user.resident.dong)
+        : null;
+
+      if (userDongNumber) {
+        // buildingPermission이 null(전체) 또는 사용자의 동 번호와 일치하는 투표만
+        queryBuilder.andWhere(
+          "(poll.buildingPermission IS NULL OR poll.buildingPermission = :dongNumber)",
+          { dongNumber: userDongNumber }
+        );
+      } else {
+        // 거주지 정보가 없으면 전체 공개 투표만
+        queryBuilder.andWhere("poll.buildingPermission IS NULL");
+      }
+    }
+    // ADMIN이나 SUPER_ADMIN은 모든 투표 조회 가능
+
+    // 정렬 (최신순)
+    queryBuilder.orderBy("poll.createdAt", "DESC");
+
+    // 페이지네이션 적용
+    queryBuilder.skip(skip).take(take);
+
+    // 실행
+    const [polls, totalCount] = await queryBuilder.getManyAndCount();
+
+    // DTO 변환
+    const pollsDto: PollListResponseDto[] = polls.map((poll) => {
+      // 현재 시간 기준으로 상태 계산
+      const now = new Date();
+      const startDate = new Date(poll.startDate);
+      const endDate = new Date(poll.endDate);
+
+      let currentStatus = poll.status;
+      if (now < startDate) {
+        currentStatus = "PENDING";
+      } else if (now >= startDate && now <= endDate) {
+        currentStatus = "IN_PROGRESS";
+      } else if (now > endDate) {
+        currentStatus = "CLOSED";
+      }
+
+      return {
+        pollId: poll.pollId,
+        userId: poll.userId,
+        title: poll.title,
+        writerName: poll.writerName,
+        buildingPermission: poll.buildingPermission,
+        createdAt: poll.createdAt.toISOString(),
+        updatedAt: poll.updatedAt.toISOString(),
+        startDate: poll.startDate.toISOString(),
+        endDate: poll.endDate.toISOString(),
+        status: currentStatus,
+      };
+    });
+
+    return {
+      polls: pollsDto,
+      totalCount,
+    };
+  } catch (error) {
+    console.error("getPolls error:", error);
+    throw error;
   }
-  // ADMIN이나 SUPER_ADMIN은 모든 투표 조회 가능
-
-  // 정렬 (최신순)
-  queryBuilder.orderBy("poll.createdAt", "DESC");
-
-  // 페이지네이션 적용
-  queryBuilder.skip(skip).take(take);
-
-  // 실행
-  const [polls, totalCount] = await queryBuilder.getManyAndCount();
-
-  // DTO 변환
-  const pollsDto: PollListResponseDto[] = polls.map((poll) => ({
-    pollId: poll.pollId,
-    userId: poll.userId,
-    title: poll.title,
-    writerName: poll.writerName,
-    buildingPermission: poll.buildingPermission,
-    createdAt: poll.createdAt.toISOString(),
-    updatedAt: poll.updatedAt.toISOString(),
-    startDate: poll.startDate.toISOString(),
-    endDate: poll.endDate.toISOString(),
-    status: poll.status,
-  }));
-
-  return {
-    polls: pollsDto,
-    totalCount,
-  };
 };
 
 /**
@@ -301,7 +325,20 @@ export const getPollDetail = async (
     })
   );
 
-  // 날짜를 ISO 문자열로 변환
+  // 현재 시간 기준으로 상태 계산
+  const now = new Date();
+  const startDate = new Date(poll.startDate);
+  const endDate = new Date(poll.endDate);
+
+  let currentStatus = poll.status;
+  if (now < startDate) {
+    currentStatus = "PENDING";
+  } else if (now >= startDate && now <= endDate) {
+    currentStatus = "IN_PROGRESS";
+  } else if (now > endDate) {
+    currentStatus = "CLOSED";
+  }
+
   const responseDto: PollDetailResponseDto = {
     pollId: poll.pollId,
     userId: poll.userId,
@@ -312,9 +349,9 @@ export const getPollDetail = async (
     updatedAt: poll.updatedAt.toISOString(),
     startDate: new Date(poll.startDate).toISOString(),
     endDate: new Date(poll.endDate).toISOString(),
-    status: poll.status,
+    status: currentStatus, // 👈 계산된 상태
     content: poll.content,
-    boardName: "주민투표 게시판", // 또는 pollBoard.apartment?.name + " 투표 게시판"
+    boardName: "주민투표 게시판",
     options: optionsDto,
   };
 
@@ -380,7 +417,7 @@ export const updatePoll = async (
   }
 
   // buildingPermission 유효성 검사 (설정된 경우)
-  if (
+  /*if (
     updateData.buildingPermission !== undefined &&
     updateData.buildingPermission !== null
   ) {
@@ -403,7 +440,7 @@ export const updatePoll = async (
       }
     }
   }
-
+*/
   // 날짜 유효성 검사
   const newStartDate = new Date(updateData.startDate);
   const newEndDate = new Date(updateData.endDate);
