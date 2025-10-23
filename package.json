@@ -20,7 +20,7 @@
     "test:coverage": "jest --coverage",
     "test:unit": "jest --testPathPatterns=\\.test\\.ts$",
     "test:e2e": "jest --testPathPatterns=\\.e2e\\.test\\.ts$",
-    "test:polls": "jest src/polls --coverage"
+    "test:polls": "jest src/polls --coverage",
     "test:auth": "jest src/auth/test --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
     "test:auth:login": "jest src/auth/test/login.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
     "test:auth:signup:super-admin": "jest src/auth/test/signup.super-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
