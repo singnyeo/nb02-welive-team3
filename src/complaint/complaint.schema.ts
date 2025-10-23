@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 export const createComplaintSchema = z.object({
   title: z.string().min(1, "제목은 필수입니다."),
   content: z.string().min(1, "내용은 필수입니다."),
   isPublic: z.boolean().default(true),
-  boardId: z.string().uuid().nullable().optional(),
+  boardId: z.string().uuid().default(() => uuidv4()),
   status: z.enum(["PENDING", "IN_PROGRESS", "RESOLVED"]).default("PENDING"),
 });
 
@@ -17,3 +18,8 @@ export const updateComplaintSchema = z.object({
 export const updateComplaintStatusSchema = z.object({
   status: z.enum(["PENDING", "IN_PROGRESS", "RESOLVED"]),
 });
+
+// 타입 추출
+export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
+export type UpdateComplaintInput = z.infer<typeof updateComplaintSchema>;
+export type UpdateComplaintStatusInput = z.infer<typeof updateComplaintStatusSchema>;

@@ -11,6 +11,7 @@ import env from './config/env';
 import notifications from './notofications/notifications.router';
 import pollsRouter from './polls/polls.router';
 import users from './users/users.router';
+import complaint from "./complaint/complaint.router";
 const app: Application = express();
 
 // 미들웨어
@@ -26,8 +27,9 @@ app.use(cookieParser());
 
 app.use('/api', root);
 app.use('/api/auth', auth);
-app.use('/api/residents', resident);
+app.use('/residents', resident);
 app.use('/api/apartments', apartments);
+app.use('/api/complaints', complaint);
 app.use('/api/notifications', notifications);
 app.use('/api/users', users);
 app.use('/api/polls', pollsRouter);

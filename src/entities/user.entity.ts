@@ -13,10 +13,10 @@ import {
 import { Apartment } from './apartment.entity';
 import { Resident } from './resident.entity';
 import { Complaint } from './complaint.entity';
+import { Comment } from './comment.entity';
 import { Vote } from './vote.entity';
 import { Poll } from './poll.entity';
 import { UserNotification } from './user-notification.entity';
-import { Comment } from './comment.entity';
 import { ApprovalStatus } from './approvalStatus.entity';
 
 // =
