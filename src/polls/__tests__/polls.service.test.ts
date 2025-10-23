@@ -15,6 +15,8 @@ import { Poll } from "../../entities/poll.entity";
 import { PollOption } from "../../entities/poll-option.entity";
 import { getPollDetail } from "../polls.service";
 import { PollDetailResponseDto } from "../dto/poll-detail-response.dto";
+import { updatePoll, deletePoll } from "../polls.service";
+import { UpdatePollDto } from "../dto/update-poll.dto";
 
 describe("Polls Service", () => {
   let mockUserRepository: any;
@@ -759,6 +761,421 @@ describe("Polls Service", () => {
           await expect(
             getPollDetail(mockPollId, "no-resident", "USER")
           ).rejects.toThrow(ForbiddenError);
+        });
+      });
+      describe("PollService - updatePoll", () => {
+        let pollRepository: any;
+        let pollOptionRepository: any;
+        let userRepository: any;
+        let pollBoardRepository: any;
+        let apartmentRepository: any;
+        let mockQueryRunner: any;
+
+        const mockPollId = "poll-123";
+        const mockUserId = "user-123";
+
+        const mockUpdateData: UpdatePollDto = {
+          title: "수정된 투표 제목",
+          content: "수정된 투표 내용",
+          buildingPermission: 102,
+          startDate: "2026-03-01T09:00:00Z", // 미래 날짜로 변경
+          endDate: "2026-03-07T18:00:00Z", // 미래 날짜로 변경
+          status: "PENDING",
+          options: [{ title: "새 옵션 1" }, { title: "새 옵션 2" }],
+        };
+
+        beforeEach(() => {
+          jest.clearAllMocks();
+
+          pollRepository = {
+            findOne: jest.fn(),
+            update: jest.fn(),
+          };
+          pollOptionRepository = {
+            create: jest.fn(),
+          };
+          userRepository = {
+            findOne: jest.fn(),
+          };
+          pollBoardRepository = {
+            findOne: jest.fn(),
+          };
+          apartmentRepository = {
+            findOne: jest.fn(),
+          };
+
+          mockQueryRunner = {
+            connect: jest.fn().mockResolvedValue(undefined),
+            startTransaction: jest.fn().mockResolvedValue(undefined),
+            manager: {
+              update: jest.fn().mockResolvedValue(undefined),
+              delete: jest.fn().mockResolvedValue(undefined),
+              save: jest.fn().mockResolvedValue(undefined),
+            },
+            commitTransaction: jest.fn().mockResolvedValue(undefined),
+            rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+            release: jest.fn().mockResolvedValue(undefined),
+          };
+
+          jest
+            .spyOn(AppDataSource, "getRepository")
+            .mockImplementation((entity: any): any => {
+              if (entity === "Poll") return pollRepository;
+              if (entity === "PollOption") return pollOptionRepository;
+              if (entity === "User") return userRepository;
+              if (entity === "PollBoard") return pollBoardRepository;
+              if (entity === "Apartment") return apartmentRepository;
+              return {};
+            });
+
+          jest
+            .spyOn(AppDataSource, "createQueryRunner")
+            .mockReturnValue(mockQueryRunner);
+        });
+
+        describe("투표 수정", () => {
+          const mockUser = {
+            id: mockUserId,
+            apartment: { id: "apt-123" },
+          };
+
+          const mockPoll = {
+            pollId: mockPollId,
+            boardId: "board-123",
+            startDate: new Date("2026-02-01T09:00:00Z"), // 미래 날짜 (2026년으로 변경)
+            endDate: new Date("2026-02-07T18:00:00Z"),
+            options: [
+              { id: "opt-1", title: "기존 옵션 1" },
+              { id: "opt-2", title: "기존 옵션 2" },
+            ],
+          };
+
+          const mockPollBoard = {
+            id: "board-123",
+            apartmentId: "apt-123",
+          };
+
+          const mockApartment = {
+            id: "apt-123",
+            startDongNumber: "101",
+            endDongNumber: "105",
+          };
+
+          it("관리자가 투표를 성공적으로 수정해야 함", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+            apartmentRepository.findOne.mockResolvedValue(mockApartment);
+            pollOptionRepository.create.mockImplementation((data: any) => data);
+
+            // When
+            await updatePoll(mockPollId, mockUserId, "ADMIN", mockUpdateData);
+
+            // Then
+            expect(mockQueryRunner.manager.update).toHaveBeenCalledWith(
+              Poll,
+              mockPollId,
+              expect.objectContaining({
+                title: "수정된 투표 제목",
+                content: "수정된 투표 내용",
+                buildingPermission: 102,
+                status: "PENDING",
+              })
+            );
+            expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(
+              PollOption,
+              { pollId: mockPollId }
+            );
+            expect(mockQueryRunner.manager.save).toHaveBeenCalled();
+            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+          });
+
+          it("일반 사용자는 투표를 수정할 수 없어야 함", async () => {
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "USER", mockUpdateData)
+            ).rejects.toThrow(ForbiddenError);
+          });
+
+          it("이미 시작된 투표는 수정할 수 없어야 함", async () => {
+            // Given
+            const startedPoll = {
+              ...mockPoll,
+              startDate: new Date("2024-01-01T09:00:00Z"), // 과거 날짜
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(startedPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "ADMIN", mockUpdateData)
+            ).rejects.toThrow(BadRequestError);
+          });
+
+          it("다른 아파트의 투표는 수정할 수 없어야 함", async () => {
+            // Given
+            const otherAptPollBoard = {
+              id: "board-123",
+              apartmentId: "other-apt-123",
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(otherAptPollBoard);
+
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "ADMIN", mockUpdateData)
+            ).rejects.toThrow(ForbiddenError);
+          });
+
+          it("SUPER_ADMIN은 다른 아파트 투표도 수정할 수 있어야 함", async () => {
+            // Given
+            const otherAptPollBoard = {
+              id: "board-123",
+              apartmentId: "other-apt-123",
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(otherAptPollBoard);
+            apartmentRepository.findOne.mockResolvedValue(mockApartment);
+            pollOptionRepository.create.mockImplementation((data: any) => data);
+
+            // When
+            await updatePoll(
+              mockPollId,
+              mockUserId,
+              "SUPER_ADMIN",
+              mockUpdateData
+            );
+
+            // Then
+            expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+          });
+
+          it("존재하지 않는 투표 수정 시 NotFoundError 발생", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(null);
+
+            // When & Then
+            await expect(
+              updatePoll("non-existent", mockUserId, "ADMIN", mockUpdateData)
+            ).rejects.toThrow(NotFoundError);
+          });
+
+          it("유효하지 않은 동 번호일 때 BadRequestError 발생", async () => {
+            // Given
+            const invalidUpdateData = {
+              ...mockUpdateData,
+              buildingPermission: 200, // 범위 밖
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+            apartmentRepository.findOne.mockResolvedValue(mockApartment);
+
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "ADMIN", invalidUpdateData)
+            ).rejects.toThrow(BadRequestError);
+          });
+
+          it("종료일이 시작일보다 빠를 때 BadRequestError 발생", async () => {
+            // Given
+            const invalidDateData = {
+              ...mockUpdateData,
+              startDate: "2026-03-07T18:00:00Z", // 변경
+              endDate: "2026-03-01T09:00:00Z", // 변경
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+            apartmentRepository.findOne.mockResolvedValue(mockApartment);
+
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "ADMIN", invalidDateData)
+            ).rejects.toThrow("종료일은 시작일보다 늦어야 합니다.");
+          });
+
+          it("트랜잭션 실패 시 롤백해야 함", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+            apartmentRepository.findOne.mockResolvedValue(mockApartment);
+            mockQueryRunner.manager.update.mockRejectedValue(
+              new Error("DB Error")
+            );
+
+            // When & Then
+            await expect(
+              updatePoll(mockPollId, mockUserId, "ADMIN", mockUpdateData)
+            ).rejects.toThrow(InternalServerError);
+            expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+            expect(mockQueryRunner.release).toHaveBeenCalled();
+          });
+        });
+      });
+
+      describe("PollService - deletePoll", () => {
+        let pollRepository: any;
+        let userRepository: any;
+        let pollBoardRepository: any;
+
+        const mockPollId = "poll-123";
+        const mockUserId = "user-123";
+
+        beforeEach(() => {
+          jest.clearAllMocks();
+
+          pollRepository = {
+            findOne: jest.fn(),
+            delete: jest.fn(),
+          };
+          userRepository = {
+            findOne: jest.fn(),
+          };
+          pollBoardRepository = {
+            findOne: jest.fn(),
+          };
+
+          jest
+            .spyOn(AppDataSource, "getRepository")
+            .mockImplementation((entity: any): any => {
+              if (entity === "Poll") return pollRepository;
+              if (entity === "User") return userRepository;
+              if (entity === "PollBoard") return pollBoardRepository;
+              return {};
+            });
+        });
+
+        describe("투표 삭제", () => {
+          const mockUser = {
+            id: mockUserId,
+            apartment: { id: "apt-123" },
+          };
+
+          const mockPoll = {
+            pollId: mockPollId,
+            boardId: "board-123",
+            startDate: new Date("2026-02-01T09:00:00Z"), // 미래 날짜로 변경
+          };
+
+          const mockPollBoard = {
+            id: "board-123",
+            apartmentId: "apt-123",
+          };
+
+          it("관리자가 투표를 성공적으로 삭제해야 함", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+
+            // When
+            await deletePoll(mockPollId, mockUserId, "ADMIN");
+
+            // Then
+            expect(pollRepository.delete).toHaveBeenCalledWith({
+              pollId: mockPollId,
+            });
+          });
+
+          it("일반 사용자는 투표를 삭제할 수 없어야 함", async () => {
+            // When & Then
+            await expect(
+              deletePoll(mockPollId, mockUserId, "USER")
+            ).rejects.toThrow(ForbiddenError);
+          });
+
+          it("이미 시작된 투표는 삭제할 수 없어야 함", async () => {
+            // Given
+            const startedPoll = {
+              ...mockPoll,
+              startDate: new Date("2024-01-01T09:00:00Z"), // 과거 날짜
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(startedPoll);
+            pollBoardRepository.findOne.mockResolvedValue(mockPollBoard);
+
+            // When & Then
+            await expect(
+              deletePoll(mockPollId, mockUserId, "ADMIN")
+            ).rejects.toThrow(BadRequestError);
+          });
+
+          it("다른 아파트의 투표는 삭제할 수 없어야 함", async () => {
+            // Given
+            const otherAptPollBoard = {
+              id: "board-123",
+              apartmentId: "other-apt-123",
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(otherAptPollBoard);
+
+            // When & Then
+            await expect(
+              deletePoll(mockPollId, mockUserId, "ADMIN")
+            ).rejects.toThrow(ForbiddenError);
+          });
+
+          it("SUPER_ADMIN은 다른 아파트 투표도 삭제할 수 있어야 함", async () => {
+            // Given
+            const otherAptPollBoard = {
+              id: "board-123",
+              apartmentId: "other-apt-123",
+            };
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(mockPoll);
+            pollBoardRepository.findOne.mockResolvedValue(otherAptPollBoard);
+
+            // When
+            await deletePoll(mockPollId, mockUserId, "SUPER_ADMIN");
+
+            // Then
+            expect(pollRepository.delete).toHaveBeenCalledWith({
+              pollId: mockPollId,
+            });
+          });
+
+          it("존재하지 않는 투표 삭제 시 NotFoundError 발생", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(mockUser);
+            pollRepository.findOne.mockResolvedValue(null);
+
+            // When & Then
+            await expect(
+              deletePoll("non-existent", mockUserId, "ADMIN")
+            ).rejects.toThrow(NotFoundError);
+          });
+
+          it("사용자를 찾을 수 없을 때 NotFoundError 발생", async () => {
+            // Given
+            userRepository.findOne.mockResolvedValue(null);
+
+            // When & Then
+            await expect(
+              deletePoll(mockPollId, "non-existent", "ADMIN")
+            ).rejects.toThrow(NotFoundError);
+          });
+
+          it("아파트 정보가 없는 사용자일 때 NotFoundError 발생", async () => {
+            // Given
+            const userWithoutApt = {
+              id: mockUserId,
+              apartment: null,
+            };
+            userRepository.findOne.mockResolvedValue(userWithoutApt);
+
+            // When & Then
+            await expect(
+              deletePoll(mockPollId, mockUserId, "ADMIN")
+            ).rejects.toThrow(NotFoundError);
+          });
         });
       });
     });

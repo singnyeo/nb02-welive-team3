@@ -18,9 +18,9 @@
     "migration:revert": "npm run typeorm migration:revert",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:unit": "jest --testPathPattern=\\.test\\.ts$",
-    "test:e2e": "jest --testPathPattern=\\.e2e\\.test\\.ts$",
-    "test:polls": "jest src/polls --coverage",
+    "test:unit": "jest --testPathPatterns=\\.test\\.ts$",
+    "test:e2e": "jest --testPathPatterns=\\.e2e\\.test\\.ts$",
+    "test:polls": "jest src/polls --coverage"
     "test:auth": "jest src/auth/test --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
     "test:auth:login": "jest src/auth/test/login.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
     "test:auth:signup:super-admin": "jest src/auth/test/signup.super-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
@@ -31,6 +31,7 @@
     "test:auth:delete": "jest src/auth/test/delete-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
     "test:apartments": "jest src/apartments/test/apartments.service.spec.ts --runInBand --setupFilesAfterEnv ./src/apartments/test/setup.ts",
     "test:users": "jest src/users/test/users.service.spec.ts --runInBand --setupFilesAfterEnv ./src/users/test/setup.ts"
+
   },
   "repository": {
     "type": "git",

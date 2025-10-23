@@ -4,6 +4,8 @@ import {
   handleCreatePoll,
   handleGetPolls,
   handleGetPollDetail,
+  handleUpdatePoll,
+  handleDeletePoll,
 } from "./polls.controller";
 
 const polls = express.Router();
@@ -16,5 +18,11 @@ polls.get("/:pollId", allow(AllowedRole.USER), handleGetPollDetail);
 
 // 투표 등록 (관리자만 가능)
 polls.post("/", allow(AllowedRole.ADMIN), handleCreatePoll);
+
+// 투표 수정 (관리자만 가능)
+polls.patch("/:pollId", allow(AllowedRole.ADMIN), handleUpdatePoll);
+
+// 투표 삭제 (관리자만 가능)
+polls.delete("/:pollId", allow(AllowedRole.ADMIN), handleDeletePoll);
 
 export default polls;
