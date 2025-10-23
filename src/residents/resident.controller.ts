@@ -186,12 +186,12 @@ export const residentList = async (req: Request, res: Response, next: NextFuncti
 
     const filter = parseResult.data;
 
-    const residents = await ResidentService.getResidentList({
+    const { residents } = await ResidentService.getResidentList({
       apartmentId: adminUser.apartmentId,
       building: filter.building,
       unitNumber: filter.unitNumber,
       residenceStatus: filter.residenceStatus,
-      isRegistered: filter.isRegistered === 'true',
+      isRegistered: filter.isRegistered,
       name: filter.name,
       contact: filter.contact,
     });
