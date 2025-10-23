@@ -190,7 +190,6 @@ describe("Polls API E2E Tests", () => {
       status: "PENDING",
       title: "2025년 아파트 외벽 도색 투표",
       content: "아파트 외벽 도색 색상을 결정하는 투표입니다.",
-      buildingPermission: 101,
       startDate: "2025-02-01T09:00:00Z",
       endDate: "2025-02-07T18:00:00Z",
       options: [{ title: "베이지색" }, { title: "회색" }, { title: "흰색" }],
@@ -293,7 +292,7 @@ describe("Polls API E2E Tests", () => {
     it("유효하지 않은 동 번호일 때 400 에러를 반환해야 함", async () => {
       const invalidData = {
         ...validPollData,
-        buildingPermission: 200, // 범위 밖
+        buildingPermission: 106, // 범위 밖
       };
 
       const response = await request(app)
@@ -380,11 +379,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-1",
             title: "101동 전용 투표",
             writerName: "작성자1",
-            buildingPermission: 101,
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
             startDate: new Date("2024-01-10"),
-            endDate: new Date("2024-01-20"),
+            endDate: new Date("2099-12-31"),
             status: "PENDING",
           },
           {
@@ -392,11 +390,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-2",
             title: "전체 공개 투표",
             writerName: "작성자2",
-            buildingPermission: null,
             createdAt: new Date("2024-01-02"),
             updatedAt: new Date("2024-01-02"),
             startDate: new Date("2024-01-15"),
-            endDate: new Date("2024-01-25"),
+            endDate: new Date("2099-12-31"),
             status: "IN_PROGRESS",
           },
           {
@@ -408,7 +405,7 @@ describe("Polls API E2E Tests", () => {
             createdAt: new Date("2024-01-03"),
             updatedAt: new Date("2024-01-03"),
             startDate: new Date("2024-01-20"),
-            endDate: new Date("2024-01-30"),
+            endDate: new Date("2099-12-31"),
             status: "CLOSED",
           },
         ];
@@ -445,11 +442,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-1",
             title: "101동 전용 투표",
             writerName: "작성자1",
-            buildingPermission: 101,
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
             startDate: new Date("2024-01-10"),
-            endDate: new Date("2024-01-20"),
+            endDate: new Date("2099-12-31"),
             status: "PENDING",
           },
           {
@@ -457,11 +453,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-2",
             title: "전체 공개 투표",
             writerName: "작성자2",
-            buildingPermission: null,
             createdAt: new Date("2024-01-02"),
             updatedAt: new Date("2024-01-02"),
             startDate: new Date("2024-01-15"),
-            endDate: new Date("2024-01-25"),
+            endDate: new Date("2099-12-31"),
             status: "IN_PROGRESS",
           },
         ];
@@ -495,11 +490,10 @@ describe("Polls API E2E Tests", () => {
           userId: `user-${i + 1}`,
           title: `투표 ${i + 1}`,
           writerName: `작성자${i + 1}`,
-          buildingPermission: null,
           createdAt: new Date(`2024-01-${(i + 1).toString().padStart(2, "0")}`),
           updatedAt: new Date(`2024-01-${(i + 1).toString().padStart(2, "0")}`),
           startDate: new Date("2024-01-10"),
-          endDate: new Date("2024-01-20"),
+          endDate: new Date("2099-12-31"),
           status: "PENDING",
         }));
 
@@ -582,11 +576,10 @@ describe("Polls API E2E Tests", () => {
           userId: "user-uuid",
           title: "테스트 투표",
           writerName: "테스트 작성자",
-          buildingPermission: 101,
           createdAt: new Date("2024-01-01T10:00:00Z"),
           updatedAt: new Date("2024-01-02T10:00:00Z"),
-          startDate: new Date("2024-01-10T00:00:00Z"),
-          endDate: new Date("2024-01-20T23:59:59Z"),
+          startDate: new Date("2024-01-01T00:00:00Z"),
+          endDate: new Date("2099-12-31T23:59:59Z"),
           status: "PENDING",
         };
 
@@ -606,7 +599,6 @@ describe("Polls API E2E Tests", () => {
               userId: expect.any(String),
               title: expect.any(String),
               writerName: expect.any(String),
-              buildingPermission: expect.any(Number),
               createdAt: expect.stringMatching(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
               ),
@@ -678,12 +670,11 @@ describe("Polls API E2E Tests", () => {
           title: "아파트 외벽 도색 투표",
           content: "외벽 도색 색상을 결정하는 투표입니다.",
           writerName: "관리자A",
-          buildingPermission: 101,
           boardId: "board-123",
           createdAt: new Date("2024-01-01T10:00:00Z"),
           updatedAt: new Date("2024-01-02T10:00:00Z"),
-          startDate: new Date("2024-01-10T00:00:00Z"),
-          endDate: new Date("2024-01-20T23:59:59Z"),
+          startDate: new Date("2024-01-01T00:00:00Z"),
+          endDate: new Date("2099-12-31T23:59:59Z"),
           status: "IN_PROGRESS",
           user: { id: "author-123", name: "관리자A" },
           options: [
@@ -764,7 +755,6 @@ describe("Polls API E2E Tests", () => {
             title: "아파트 외벽 도색 투표",
             content: "외벽 도색 색상을 결정하는 투표입니다.",
             writerName: "관리자A",
-            buildingPermission: 101,
             status: "IN_PROGRESS",
             boardName: "주민투표 게시판",
             options: expect.arrayContaining([
@@ -794,7 +784,6 @@ describe("Polls API E2E Tests", () => {
           title: "원본 제목",
           content: "원본 내용",
           writerName: "관리자",
-          buildingPermission: 101,
           boardId: "board-123",
           createdAt: new Date("2024-01-01"),
           updatedAt: new Date("2024-01-01"),
@@ -983,21 +972,6 @@ describe("Polls API E2E Tests", () => {
           expect(response.body.message).toContain("종료일은 시작일보다");
         });
 
-        it("유효하지 않은 동 번호일 때 400 에러를 반환해야 함", async () => {
-          const invalidData = {
-            ...validUpdateData,
-            buildingPermission: 200, // 범위 밖
-          };
-
-          const response = await request(app)
-            .patch(`/api/polls/${mockPollId}`)
-            .set("Cookie", [`access-token=${adminToken}`])
-            .send(invalidData);
-
-          expect(response.status).toBe(400);
-          expect(response.body.message).toContain("유효하지 않은 동 번호");
-        });
-
         it("필수 필드가 누락된 경우 400 에러를 반환해야 함", async () => {
           const invalidData = {
             title: "제목만 있음",
@@ -1038,7 +1012,6 @@ describe("Polls API E2E Tests", () => {
             title: "이미 시작된 투표",
             content: "내용",
             writerName: "관리자",
-            buildingPermission: 101,
             boardId: "board-123",
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
@@ -1109,7 +1082,6 @@ describe("Polls API E2E Tests", () => {
           title: "삭제할 투표",
           content: "내용",
           writerName: "관리자",
-          buildingPermission: 101,
           boardId: "board-123",
           createdAt: new Date("2024-01-01"),
           updatedAt: new Date("2024-01-01"),
@@ -1239,7 +1211,6 @@ describe("Polls API E2E Tests", () => {
             title: "이미 시작된 투표",
             content: "내용",
             writerName: "관리자",
-            buildingPermission: 101,
             boardId: "board-123",
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
