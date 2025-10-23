@@ -12,7 +12,6 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { Apartment } from './apartment.entity';
-import { ApprovalStatus } from './approvalStatus.entity';
 
 export enum ResidenceStatus {
   RESIDENCE = 'RESIDENCE',
@@ -92,12 +91,4 @@ export class Resident {
 
   @UpdateDateColumn()
   updatedAt!: Date;
-
-  @Column({
-    type: 'enum',
-    enum: ApprovalStatus,
-    default: ApprovalStatus.PENDING,
-    comment: '승인 상태',
-  })
-  approvalStatus!: ApprovalStatus;
 }
