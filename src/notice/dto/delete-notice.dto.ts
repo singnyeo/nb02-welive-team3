@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
-
 // 공지사항 삭제 요청 DTO
 export const DeleteNoticeRequestDto = z.object({
-    noticeId: z.string().uuid(),  // 삭제할 공지사항 고유 번호
+    noticeId: z.string(),
 });
 
 // 공지사항 삭제 응답 DTO

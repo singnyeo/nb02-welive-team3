@@ -67,7 +67,7 @@ export class Notice {
   @Column({ type: 'text', nullable: false })
   content!: string;
 
-  @Column({ type: 'int', nullable: false })
+  @Column({ type: 'int', default: 0, nullable: false })
   viewsCount!: number;
 
   @OneToMany(() => Comment, (c) => c.notice)
@@ -96,6 +96,7 @@ export class Comment {
   content!: string;
 
   @ManyToOne(() => Notice, (notice) => notice.comments, { onDelete: 'CASCADE' })
+
   @JoinColumn({ name: 'noticeId' })
   notice!: Notice;
 
