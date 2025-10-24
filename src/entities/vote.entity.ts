@@ -31,7 +31,7 @@ export class Vote {
   @Column({ type: "uuid" })
   pollId!: string; // 중복 투표 방지를 위한 pollId
 
-  @ManyToOne(() => PollOption, (option) => option.voteRecords, {
+  @ManyToOne(() => PollOption, (option) => option.votes, {
     onDelete: "CASCADE",
   })
   @JoinColumn({ name: "optionId" })

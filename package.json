@@ -4,6 +4,7 @@
   "description": "welive 고급 프로젝트",
   "main": "index.js",
   "scripts": {
+    "test": "jest",
     "dev": "nodemon --watch src --exec ts-node src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
@@ -15,12 +16,22 @@
     "migration:create": "npm run typeorm migration:create src/migrations/ManualMigration",
     "migration:run": "npm run typeorm migration:run",
     "migration:revert": "npm run typeorm migration:revert",
-    "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "test:unit": "jest --testPathPattern=\\.test\\.ts$",
-    "test:e2e": "jest --testPathPattern=\\.e2e\\.test\\.ts$",
-    "test:polls": "jest src/polls --coverage"
+    "test:unit": "jest --testPathPatterns=\\.test\\.ts$",
+    "test:e2e": "jest --testPathPatterns=\\.e2e\\.test\\.ts$",
+    "test:polls": "jest src/polls --coverage",
+    "test:votes": "jest src/votes --coverage",
+    "test:auth": "jest src/auth/test --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:login": "jest src/auth/test/login.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:super-admin": "jest src/auth/test/signup.super-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:admin": "jest src/auth/test/signup.admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:signup:user": "jest src/auth/test/signup.user.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:cleanup:admin": "jest src/auth/test/cleanup.admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:cleanup:resident": "jest src/auth/test/cleanup.resident.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:auth:delete": "jest src/auth/test/delete-admin.spec.ts --runInBand --setupFilesAfterEnv ./src/auth/test/setup.ts",
+    "test:apartments": "jest src/apartments/test/apartments.service.spec.ts --runInBand --setupFilesAfterEnv ./src/apartments/test/setup.ts",
+    "test:users": "jest src/users/test/users.service.spec.ts --runInBand --setupFilesAfterEnv ./src/users/test/setup.ts"
   },
   "repository": {
     "type": "git",
@@ -35,6 +46,7 @@
   },
   "homepage": "https://github.com/JONGJIN-LEE1/nb02-welive-team3#readme",
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.908.0",
     "@types/cors": "^2.8.19",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -49,6 +61,7 @@
     "socket.io": "^4.8.1",
     "streamifier": "^0.1.1",
     "typeorm": "^0.3.26",
+    "uuid": "^8.3.2",
     "zod": "^4.1.9"
   },
   "devDependencies": {
@@ -63,6 +76,8 @@
     "@types/socket.io": "^3.0.1",
     "@types/streamifier": "^0.1.2",
     "@types/supertest": "^6.0.3",
+    "cross-env": "^10.1.0",
+    "@types/uuid": "^10.0.0",
     "jest": "^30.2.0",
     "nodemon": "^3.1.10",
     "supertest": "^7.1.4",

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ApartmentStatus } from '../entities/apartment.entity';
+import { ApprovalStatus } from '../entities/approvalStatus.entity';
 
 // =============================
 // : ZOD CUSTOM TYPES
@@ -17,7 +17,7 @@ const startFloorNumber = z.number().int().min(1).max(999);
 const endFloorNumber = z.number().int().min(1).max(999);
 const startHoNumber = z.number().int().min(1).max(999);
 const endHoNumber = z.number().int().min(1).max(999);
-const apartmentStatus = z.enum(ApartmentStatus);
+const apartmentStatus = z.enum(ApprovalStatus);
 const adminId = id;
 const adminName = name;
 const adminContact = z.string().min(9).max(11);
@@ -31,12 +31,12 @@ export const ApartmentsRequestParamsSchema = z.object({
 });
 
 export const GetApartmentsRequestQuerySchema = z.object({
-  name: name,
-  address: address,
+  name: name.optional(),
+  address: address.optional(),
 });
 
 export const GetApartmentsRequestSchema = z.object({
-  query: GetApartmentsRequestQuerySchema,
+  query: GetApartmentsRequestQuerySchema.optional(),
 });
 
 export const GetApartmentsResponseSchema = z.array(
