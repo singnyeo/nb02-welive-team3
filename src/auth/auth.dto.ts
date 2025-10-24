@@ -201,16 +201,25 @@ export const UpdateAdminsStatusResponseSchema = z.object({
   message: message,
 });
 
-export const UpdateResidentStatusRequestSchema = z.object({
+export const UpdateResidentStatusRequestBodySchema = z.object({
   status: joinStatus,
+});
+
+export const UpdateResidentStatusRequestSchema = z.object({
+  params: UpdateAdminStatusRequestParamsSchema,
+  body: UpdateResidentStatusRequestBodySchema,
 });
 
 export const UpdateResidentStatusResponseSchema = z.object({
   message: message,
 });
 
-export const UpdateResidentsStatusRequestSchema = z.object({
+export const UpdateResidentsStatusRequestBodySchema = z.object({
   status: joinStatus,
+});
+
+export const UpdateResidentsStatusRequestSchema = z.object({
+  body: UpdateResidentsStatusRequestBodySchema,
 });
 
 export const UpdateResidentsStatusResponseSchema = z.object({

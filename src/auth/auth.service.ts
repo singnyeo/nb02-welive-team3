@@ -99,6 +99,9 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
 
   await userRepository.save(newUser);
 
+  resident.user = newUser;
+  await residentRepository.save(resident);
+
   return newUser;
 };
 
@@ -470,4 +473,62 @@ export const cleanup = async (userId: string) => {
       await residentRepository.softDelete(resident.id);
     }
   }
+};
+
+export const updateResidentStatus = async (residentId: string, status: ApprovalStatus) => {
+  const residentRepository = AppDataSource.getRepository('Resident');
+  const userRepository = AppDataSource.getRepository('User');
+
+  const resident = await residentRepository.findOne({
+    where: { id: residentId },
+    relations: { user: true },
+  });
+
+  if (!resident) {
+    throw new NotFoundError('존재하지 않는 세대원입니다.');
+  }
+
+  if (!resident.user) {
+    throw new NotFoundError('세대원에 연결된 사용자 정보가 없습니다.');
+  }
+
+  if (resident.user.joinStatus === status) {
+    return;
+  }
+
+  resident.user.joinStatus = status;
+  await userRepository.save(resident.user);
+};
+
+export const updateResidentsStatus = async (status: ApprovalStatus) => {
+  const residentRepository = AppDataSource.getRepository('Resident');
+  const userRepository = AppDataSource.getRepository('User');
+
+  const residents = await residentRepository
+    .createQueryBuilder('resident')
+    .innerJoinAndSelect('resident.user', 'user')
+    .where('user.joinStatus = :status', { status: ApprovalStatus.PENDING })
+    .getMany();
+
+  if (residents.length === 0) {
+    throw new NotFoundError('승인 대기 중인 세대원이 없습니다.');
+  }
+
+  const updatedUsers = [];
+
+  for (const resident of residents) {
+    if (!resident.user) {
+      continue;
+    }
+
+    resident.approvalStatus = status;
+    resident.user.joinStatus = status;
+    updatedUsers.push(userRepository.save(resident.user));
+  }
+
+  await Promise.all(updatedUsers);
+
+  await residentRepository.save(residents);
+
+  return;
 };

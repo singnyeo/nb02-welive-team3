@@ -1,13 +1,14 @@
 import { AppDataSource } from '../config/data-source';
-import { CreateResidentDto, ResidentResponseDto, ResidentResponseSchema } from './dtos/create-resident.dto';
+import { CreateResidentDto, ResidentResponseDto } from './dtos/create-resident.dto';
 import { Resident, HouseholdType, ResidenceStatus } from '../entities/resident.entity';
 import { User } from '../entities/user.entity';
-import { ConflictError, NotFoundError } from '../types/error.type';
+import { BadRequestError, ConflictError, NotFoundError } from '../types/error.type';
 import { Apartment } from '../entities/apartment.entity';
-import { parseCsvBuffer } from './resident-csv.util';
+import { parseCsvBuffer } from './utils/resident-csv.util';
 import { GetResidentListParams } from './dtos/resident-filter.dto';
-import { UpdatedResidentDto } from './dtos/update-resident.dto';
+import { UpdatedResidentDto, updatedResidentSchema } from './dtos/update-resident.dto';
 import { CsvResidentDto, csvResidentSchema } from './dtos/resident-csv.dto';
+import { residentResponse } from './utils/resident.util';
 
 /**
  * 개별 등록용
@@ -49,19 +50,7 @@ export const createResident = async (
     throw new NotFoundError('입주민 정보 조회에 실패했습니다.');
   }
 
-  return ResidentResponseSchema.parse({
-    id: fullResident.id,
-    userId: fullResident.user?.id ?? null,
-    building: fullResident.building,
-    unitNumber: fullResident.unitNumber,
-    contact: fullResident.contact,
-    email: fullResident.user?.email ?? null,
-    name: fullResident.name,
-    residenceStatus: fullResident.residenceStatus,
-    isHouseholder: fullResident.isHouseholder,
-    isRegistered: fullResident.isRegistered,
-    approvalStatus: fullResident.user?.joinStatus ?? 'PENDING',
-  });
+  return residentResponse(fullResident);
 };
 
 /**
@@ -113,19 +102,8 @@ export const createResidentFromUser = async (
 
     await queryRunner.commitTransaction();
 
-    return {
-      id: savedResident.id,
-      userId: savedResident.user?.id ?? null,
-      building: savedResident.building,
-      unitNumber: savedResident.unitNumber,
-      contact: savedResident.contact,
-      email: savedResident.user?.email ?? null,
-      name: savedResident.name,
-      residenceStatus: savedResident.residenceStatus,
-      isHouseholder: savedResident.isHouseholder,
-      isRegistered: savedResident.isRegistered,
-      approvalStatus: savedResident.user?.joinStatus ?? 'PENDING',
-    };
+    return residentResponse(savedResident);
+
   } catch (error: unknown) {
     await queryRunner.rollbackTransaction();
     throw error;
@@ -146,7 +124,7 @@ export const registerResidentsFromCsv = async (
   apartment: Apartment
 ): Promise<{ count: number }> => {
   // CSV 파싱 -> 배열로 변환
-  const parsedRows = await parseCsvBuffer(buffer);
+  const parsedRows: CsvResidentDto[] = await parseCsvBuffer(buffer);
 
   const repository = AppDataSource.getRepository(Resident);
 
@@ -168,29 +146,14 @@ export const registerResidentsFromCsv = async (
     throw new ConflictError(`CSV 파일에 유효하지 않은 데이터가 포함되어 있습니다. ${errorMessages}`);
   }
 
-  // 중복 검사 key: 동, 호수, 이름
-  const keys = parsedRows.map(row => ({
-    building: row.building,
-    unitNumber: row.unitNumber,
-    name: row.name,
-  }));
-
-  // 기존 입주민 조회 쿼리 구성 (OR 조건)
-  const qb = repository.createQueryBuilder('resident')
-    .where('resident.apartmentId = :apartmentId', { apartmentId: apartment.id });
-
-  keys.forEach((key, index) => {
-    qb.orWhere(
-      `(resident.building = :building${index} AND resident.unitNumber = :unitNumber${index} AND resident.name = :name${index})`,
-      {
-        [`building${index}`]: key.building,
-        [`unitNumber${index}`]: key.unitNumber,
-        [`name${index}`]: key.name,
-      }
-    );
+  const existingResidents = await repository.find({
+    where: validRows.map(row => ({
+      building: row.building,
+      unitNumber: row.unitNumber,
+      name: row.name,
+      apartment: { id: apartment.id },
+    })),
   });
-
-  const existingResidents = await qb.getMany();
 
   // 조회된 기존 입주민을 Set으로 변환
   const existingSet = new Set(
@@ -200,11 +163,11 @@ export const registerResidentsFromCsv = async (
   );
 
   // 중복되지 않은 입주민만 데이터베이스에 저장
-  const insertRows = parsedRows
+  const insertRows = validRows
     .filter(row => !existingSet.has(`${row.building}-${row.unitNumber}-${row.name}`))
     .map(row => ({
       ...row,
-      apartment,
+      apartmentId: apartment.id,
       isRegistered: false,
       residenceStatus: ResidenceStatus.RESIDENCE,
     }));
@@ -227,7 +190,6 @@ export const registerResidentsFromCsv = async (
 export const getResidentList = async (params: GetResidentListParams) => {
   const repository = AppDataSource.getRepository(Resident);
 
-
   const query = repository
     .createQueryBuilder('resident')
     .where('resident.apartmentId = :apartmentId', { apartmentId: params.apartmentId });
@@ -241,9 +203,6 @@ export const getResidentList = async (params: GetResidentListParams) => {
   }
   if (params.residenceStatus) {
     query.andWhere('resident.residenceStatus = :residenceStatus', { residenceStatus: params.residenceStatus });
-  }
-  if (params.isRegistered === false) {
-    query.andWhere('resident.isRegistered = :isRegistered', { isRegistered: false });
   }
   if (typeof params.isRegistered === 'boolean') {
     query.andWhere('resident.isRegistered = :isRegistered', {
@@ -265,19 +224,9 @@ export const getResidentList = async (params: GetResidentListParams) => {
     .addOrderBy('resident.isHouseholder', 'DESC')
     .getMany();
 
-  return residents.map(resident => ({
-    id: resident.id,
-    userId: resident.user?.id ?? null,
-    building: resident.building,
-    unitNumber: resident.unitNumber,
-    contact: resident.contact,
-    email: resident.user?.email ?? null,
-    name: resident.name,
-    residenceStatus: resident.residenceStatus,
-    isHouseholder: resident.isHouseholder,
-    isRegistered: resident.isRegistered,
-    approvalStatus: resident.user?.joinStatus ?? 'PENDING',
-  }));
+  return {
+    residents: residents.map(residentResponse),
+  };
 }
 
 /**
@@ -298,7 +247,8 @@ export const residentListCsv = async (apartmentId: string): Promise<string> => {
   const header = `"동","호수","이름","연락처","세대주 여부"`;
   const rows = residents.map(resident => {
     const householder = resident.isHouseholder ? "HOUSEHOLDER" : "MEMBER";
-    return `"${resident.building}","${resident.unitNumber}","${resident.name}","${resident.contact}","${householder}"`;
+    const safeContact = resident.contact ? `=""${resident.contact}""` : '';
+    return `"${resident.building}","${resident.unitNumber}","${resident.name}","${safeContact}","${householder}"`;
   });
 
   return '\uFEFF' + [header, ...rows].join('\n');
@@ -325,19 +275,7 @@ export const residentListDetail = async (
     throw new NotFoundError('입주민 정보를 찾을 수 없습니다.');
   }
 
-  return {
-    id: resident.id,
-    userId: resident.user?.id ?? null,
-    building: resident.building,
-    unitNumber: resident.unitNumber,
-    contact: resident.contact,
-    email: resident.user?.email ?? null,
-    name: resident.name,
-    residenceStatus: resident.residenceStatus,
-    isHouseholder: resident.isHouseholder,
-    isRegistered: resident.isRegistered,
-    approvalStatus: resident.user?.joinStatus ?? 'PENDING',
-  };
+  return residentResponse(resident);
 };
 
 /**
@@ -364,23 +302,16 @@ export const updateResident = async (
     throw new NotFoundError('입주민 정보를 찾을 수 없습니다.');
   }
 
-  Object.assign(resident, updateData);
+  const parsed = updatedResidentSchema.safeParse(updateData);
+  if (!parsed.success) {
+    throw new BadRequestError(`입력값이 유효하지 않습니다: ${parsed.error.message}`);
+  }
+
+  Object.assign(resident, parsed.data);
 
   const updated = await repository.save(resident);
 
-  return {
-    id: updated.id,
-    userId: updated.user?.id ?? null,
-    building: updated.building,
-    unitNumber: updated.unitNumber,
-    contact: updated.contact,
-    email: updated.user?.email ?? null,
-    name: updated.name,
-    residenceStatus: updated.residenceStatus,
-    isHouseholder: updated.isHouseholder,
-    isRegistered: updated.isRegistered,
-    approvalStatus: updated.user?.joinStatus ?? 'PENDING',
-  };
+  return residentResponse(updated);
 }
 
 /**
