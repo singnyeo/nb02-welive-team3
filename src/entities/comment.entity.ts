@@ -49,6 +49,8 @@ export class Comment {
 
   // 공지사항
   @ManyToOne(() => Notice, (notice) => notice.comments, { nullable: true, onDelete: "CASCADE" })
+
+
   @JoinColumn({ name: "notice_id" })
   notice?: Notice;
 
