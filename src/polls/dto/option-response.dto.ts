@@ -3,9 +3,3 @@ export interface OptionResponse {
   title: string;
   voteCount: number;
 }
-
-export interface OptionResult {
-  id: string;
-  title: string;
-  votes: number;
-}
