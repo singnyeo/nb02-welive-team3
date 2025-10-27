@@ -45,6 +45,6 @@ export const DeleteNotice = async (req: Request, res: Response) => {
         noticeId: noticeId,
     });
 
-    await noticeService.DeleteNotice(Result);
-    return res.status(200).json({ message: '정상적으로 삭제 되었습니다.' });
+    const response = await noticeService.DeleteNotice(Result);
+    return res.status(200).json(response);
 };

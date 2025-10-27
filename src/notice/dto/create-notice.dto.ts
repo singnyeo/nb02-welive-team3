@@ -18,6 +18,7 @@ const FORBID_HTML = /[<>]/;
 /** 요청 바디 스키마 */
 export const CreateNoticeRequestSchema = z
   .object({
+    userId: z.string().uuid(),
     category: NoticeCategoryEnum,
     title: z.preprocess(
       trim,
@@ -34,8 +35,8 @@ export const CreateNoticeRequestSchema = z
       .refine((v) => !FORBID_HTML.test(v), "HTML 태그(<, >)는 허용되지 않습니다."),
     boardId: z.string().uuid("boardId는 UUID 형식이어야 합니다."),
     isPinned: z.boolean().optional().default(false),
-    startsAt: z.string().datetime().optional(), // ISO8601(UTC)
-    endsAt: z.string().datetime().optional(),   // ISO8601(UTC)
+    startDate: z.string().datetime().optional(), // ISO8601(UTC)
+    endDate: z.string().datetime().optional(),   // ISO8601(UTC)
   })
 
 export type CreateNoticeRequestDto = z.infer<typeof CreateNoticeRequestSchema>;
