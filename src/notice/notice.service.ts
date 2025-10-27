@@ -166,7 +166,6 @@ export const DeleteNotice = async (data: DeleteNoticeRequestDtoType) => {
         console.log(Notice)
         return DeleteNoticeResponseDto.parse({ message: "공지사항이 정상적으로 삭제 되었습니다." });
     } else {
-        // 삭제 대상이 없거나 실패한 경우 에러 처리 (예외 던지거나 메시지 반환)
         throw new Error("삭제할 공지사항이 존재하지 않습니다.");
     }
 };
