@@ -14,6 +14,7 @@ import users from "./users/users.router";
 import complaint from "./complaint/complaint.router";
 import vote from "./votes/votes.router";
 import notice from "./notice/notice.router";
+import pollSchedulerRouter from "./poll-scheduler/poll-scheduler.router";
 
 const app: Application = express();
 
@@ -37,7 +38,8 @@ app.use("/api/notifications", notifications);
 app.use("/api/users", users);
 app.use("/api/polls", pollsRouter);
 app.use("/api/options", vote);
-app.use("/api/notices", notice)
+app.use("/api/notices", notice);
+app.use("/api/poll-scheduler", pollSchedulerRouter);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);
