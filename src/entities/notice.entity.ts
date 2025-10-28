@@ -31,6 +31,9 @@ export class Notice {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Column({ type: "uuid" })
+  userId!: string;
+
   @Column({ type: 'uuid', nullable: false })
   boardId!: string;
 
@@ -64,6 +67,9 @@ export class Notice {
   @Column({ type: 'text', nullable: false })
   content!: string;
 
+  @Column({ type: 'int', default: 0, nullable: false })
+  viewsCount!: number;
+
   @OneToMany(() => Comment, (c) => c.notice)
   comments!: Comment[];
 }
@@ -76,12 +82,29 @@ export class Comment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
+  @Column({ type: "uuid" })
+  userId!: string;
+
+  @Column({ type: "uuid" })
+  commentId!: string;
+
+
+  @Column({ type: 'text', nullable: false })
+  writerName!: string;
+
   @Column({ type: 'text', nullable: false })
   content!: string;
 
   @ManyToOne(() => Notice, (notice) => notice.comments, { onDelete: 'CASCADE' })
+
   @JoinColumn({ name: 'noticeId' })
   notice!: Notice;
+
+  @CreateDateColumn({ type: 'timestamptz' })
+  createdAt!: Date;
+
+  @UpdateDateColumn({ type: 'timestamptz' })
+  updatedAt!: Date;
 }
 
 // =

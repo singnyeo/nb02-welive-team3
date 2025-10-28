@@ -1,10 +1,20 @@
-import { createResident, createResidentFromUser, getResidentList, residentListDetail, updateResident } from '../resident.service';
+import {
+  createResident,
+  createResidentFromUser,
+  getResidentList,
+  residentListDetail,
+  updateResident,
+  deleteResident,
+  registerResidentsFromCsv,
+  residentListCsv
+} from '../resident.service';
 import { AppDataSource } from '../../config/data-source';
 import { HouseholdType, Resident, ResidenceStatus } from '../../entities/resident.entity';
-import { ConflictError } from '../../types/error.type';
+import { ConflictError, NotFoundError } from '../../types/error.type';
 import { CreateResidentDto } from '../dtos/create-resident.dto';
 import { Apartment } from '../../entities/apartment.entity';
 import { User } from '../../entities/user.entity';
+import { parseCsvBuffer } from '../utils/resident-csv.util';
 
 jest.mock('../../config/data-source', () => ({
   AppDataSource: {
@@ -228,7 +238,7 @@ describe('입주민 목록 조회 getResidentList', () => {
     id: 'resident-1',
     building: '101',
     unitNumber: '1001',
-    contact: '010-1234-5678',
+    contact: '01012345678',
     name: '김길동',
     isHouseholder: HouseholdType.HOUSEHOLDER,
     isRegistered: true,
@@ -278,19 +288,20 @@ describe('입주민 목록 조회 getResidentList', () => {
     expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('resident.name LIKE :name', { name: `%${paramsMock.name}%` });
     expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('resident.contact LIKE :contact', { contact: `%${paramsMock.contact}%` });
 
-    expect(result).toEqual([{
-      id: 'resident-1',
-      userId: 'user-1',
-      building: '101',
-      unitNumber: '1001',
-      contact: '010-1234-5678',
-      email: 'test@example.com',
-      name: '김길동',
-      residenceStatus: 'RESIDENCE',
-      isHouseholder: 'HOUSEHOLDER',
-      isRegistered: true,
-      approvalStatus: 'APPROVED',
-    },
+    expect(result.residents).toEqual([
+      {
+        id: 'resident-1',
+        userId: 'user-1',
+        building: '101',
+        unitNumber: '1001',
+        contact: '01012345678',
+        email: 'test@example.com',
+        name: '김길동',
+        residenceStatus: 'RESIDENCE',
+        isHouseholder: 'HOUSEHOLDER',
+        isRegistered: true,
+        approvalStatus: 'APPROVED',
+      }
     ]);
   });
 });
@@ -306,7 +317,7 @@ describe('입주민 상세 조회 getResidentDetail', () => {
     id: 'resident-1',
     building: '101',
     unitNumber: '1001',
-    contact: '010-1234-5678',
+    contact: '01012345678',
     name: '김길동',
     isHouseholder: HouseholdType.HOUSEHOLDER,
     isRegistered: true,
@@ -344,7 +355,7 @@ describe('입주민 상세 조회 getResidentDetail', () => {
       userId: 'user-1',
       building: '101',
       unitNumber: '1001',
-      contact: '010-1234-5678',
+      contact: '01012345678',
       email: 'test@example.com',
       name: '김길동',
       residenceStatus: 'RESIDENCE',
@@ -373,7 +384,7 @@ describe('입주민 정보 수정 updateResident', () => {
     id: 'resident-1',
     building: '101',
     unitNumber: '1001',
-    contact: '010-1234-5678',
+    contact: '01012345678',
     name: '김길동',
     isHouseholder: HouseholdType.HOUSEHOLDER,
     isRegistered: true,
@@ -397,10 +408,10 @@ describe('입주민 정보 수정 updateResident', () => {
     jest.clearAllMocks();
   });
 
-  test('입주민 정보 수정', async () => {
+  test('기존 입주민 정보가 존재하면, 업데이트 후 반환', async () => {
 
     const updateData = {
-      contact: '010-9999-8888',
+      contact: '01099998888',
       name: '홍길동',
     }
 
@@ -418,7 +429,7 @@ describe('입주민 정보 수정 updateResident', () => {
       userId: 'user-1',
       building: '101',
       unitNumber: '1001',
-      contact: '010-9999-8888',
+      contact: '01099998888',
       email: 'test@example.com',
       name: '홍길동',
       residenceStatus: 'RESIDENCE',
@@ -430,5 +441,316 @@ describe('입주민 정보 수정 updateResident', () => {
 });
 
 // 입주민 삭제 deleteResident
+describe('입주민 소프트 삭제 deleteResident', () => {
+  const residentIdMock = 'resident -1';
+  const apartmentIdMock = 'apartment-1';
+
+  const existingResident = {
+    id: residentIdMock,
+    building: '101',
+    unitNumber: '1001',
+    contact: '01012345678',
+    name: '김길동',
+    isHouseholder: HouseholdType.HOUSEHOLDER,
+    isRegistered: true,
+    residenceStatus: ResidenceStatus.RESIDENCE,
+    user: {
+      id: 'user-1',
+      email: 'test@example.com',
+      joinStatus: 'APPROVED',
+    } as User,
+  } as Resident;
+
+  let residentRepository: any;
+  let userRepository: any;
+  let mockQueryRunner: any;
+
+
+  beforeEach(() => {
+    residentRepository = {
+      findOne: jest.fn(),
+      softRemove: jest.fn()
+    };
+    userRepository = {
+      softRemove: jest.fn(),
+    }
+    mockQueryRunner = {
+      connect: jest.fn(),
+      startTransaction: jest.fn(),
+      commitTransaction: jest.fn(),
+      rollbackTransaction: jest.fn(),
+      release: jest.fn(),
+      manager: {
+        getRepository: jest
+          .fn()
+          .mockImplementation((entity) => {
+            if (entity === Resident) return residentRepository;
+            if (entity === User) return userRepository;
+          }),
+      },
+    },
+      (AppDataSource.createQueryRunner as jest.Mock).mockReturnValue(mockQueryRunner);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  })
+
+  test('입주민과 유저가 존재하면 softremove', async () => {
+    residentRepository.findOne.mockResolvedValueOnce(existingResident)
+
+    await deleteResident(residentIdMock, apartmentIdMock);
+
+    expect(mockQueryRunner.connect).toHaveBeenCalled();
+    expect(mockQueryRunner.startTransaction).toHaveBeenCalled();
+    expect(residentRepository.findOne).toHaveBeenLastCalledWith({
+      where: {
+        id: residentIdMock,
+        apartment: { id: apartmentIdMock },
+      },
+      relations: ['user'],
+    });
+
+    expect(userRepository.softRemove).toHaveBeenCalledWith(existingResident.user);
+    expect(residentRepository.softRemove).toHaveBeenLastCalledWith(existingResident);
+
+    expect(mockQueryRunner.commitTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+
+  test('입주민이 존재하지 않으면 NotFoundError 발생', async () => {
+    residentRepository.findOne.mockImplementation(null);
+
+    await expect(deleteResident(residentIdMock, apartmentIdMock)).rejects.toThrow(NotFoundError);
+
+    expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+
+  test('입주민 삭제 중 예외 발생 시 롤백', async () => {
+    residentRepository.findOne.mockResolvedValueOnce(existingResident);
+    userRepository.softRemove.mockRejectedValue(new Error('db 오류'));
+
+    await expect(deleteResident(residentIdMock, apartmentIdMock)).rejects.toThrow('db 오류');
+
+    expect(mockQueryRunner.rollbackTransaction).toHaveBeenCalled();
+    expect(mockQueryRunner.release).toHaveBeenCalled();
+  });
+});
+
 // 입주민 명부 csv 파일 업로드
 
+jest.mock('../utils/resident-csv.util', () => ({
+  parseCsvBuffer: jest.fn(),
+}));
+
+
+describe('입주민 명부 csv 파일 업로드', () => {
+  let mockingRepository: any;
+  const apartmentMock = { id: 'apartment-1' } as Apartment;
+
+  beforeEach(() => {
+    mockingRepository = {
+      find: jest.fn(),
+      createQueryBuilder: jest.fn(),
+    };
+    AppDataSource.getRepository = jest.fn().mockReturnValue(mockingRepository);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('csv 데이터가 모두 유효하고 중복 없는 경우, DB에 저장 후 삽입 건수 반환', async () => {
+    (parseCsvBuffer as jest.Mock).mockResolvedValue([
+      {
+        building: '101',
+        unitNumber: '1001',
+        name: '홍길동',
+        contact: '01011112222',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+    mockingRepository.find.mockResolvedValue([]);
+
+    const executeMock = jest.fn().mockResolvedValue({});
+    const valuesMock = jest.fn().mockReturnValue({ execute: executeMock });
+    const insertMock = jest.fn().mockReturnValue({ values: valuesMock });
+    const createQueryBuilderMock = jest.fn().mockReturnValue({ insert: insertMock });
+
+    mockingRepository.createQueryBuilder.mockImplementation(createQueryBuilderMock);
+
+    const result = await registerResidentsFromCsv(Buffer.from(''), apartmentMock);
+
+    expect(parseCsvBuffer).toHaveBeenCalled();
+    expect(mockingRepository.find).toHaveBeenCalledWith({
+      where: [
+        { building: '101', unitNumber: '1001', name: '홍길동', apartment: { id: apartmentMock.id } },
+        { building: '105', unitNumber: '1005', name: '길동이', apartment: { id: apartmentMock.id } },
+      ],
+    });
+    expect(createQueryBuilderMock).toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalled();
+    expect(executeMock).toHaveBeenCalled();
+
+    expect(result.count).toBe(2);
+  });
+
+  test('CSV 데이터에 유효하지 않은 행이 있으면 ConflictError 발생', async () => {
+    // parseCsvBuffer가 유효하지 않은 데이터 포함
+    (parseCsvBuffer as jest.Mock).mockResolvedValue([
+      {
+        building: '101',
+        unitNumber: '',
+        name: '홍길동',
+        contact: '01011112222',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+
+    await expect(registerResidentsFromCsv(Buffer.from(''), apartmentMock))
+      .rejects.toThrow(ConflictError);
+
+    expect(parseCsvBuffer).toHaveBeenCalled();
+    expect(mockingRepository.find).not.toHaveBeenCalled();
+  });
+
+  test('CSV 데이터 중 기존 DB에 중복 입주민이 있으면 중복 제외하고 저장', async () => {
+    (parseCsvBuffer as jest.Mock).mockResolvedValue([
+      {
+        building: '101',
+        unitNumber: '1001',
+        name: '홍길',
+        contact: '01011112222',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+
+    mockingRepository.find.mockResolvedValue([
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+
+    const executeMock = jest.fn().mockResolvedValue({});
+    const valuesMock = jest.fn().mockReturnValue({ execute: executeMock });
+    const insertMock = jest.fn().mockReturnValue({ values: valuesMock });
+    mockingRepository.createQueryBuilder.mockReturnValue({
+      insert: insertMock,
+    });
+
+    const result = await registerResidentsFromCsv(Buffer.from(''), apartmentMock);
+
+    expect(result.count).toBe(1);
+
+    expect(mockingRepository.find).toHaveBeenCalled();
+    expect(mockingRepository.createQueryBuilder).toHaveBeenCalled();
+    expect(insertMock).toHaveBeenCalled();
+    expect(executeMock).toHaveBeenCalled();
+  });
+
+  test('삽입할 데이터가 없으면 DB insert 호출 안 함', async () => {
+    (parseCsvBuffer as jest.Mock).mockResolvedValue([
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+
+    // 모두 중복
+    mockingRepository.find.mockResolvedValue([
+      {
+        building: '105',
+        unitNumber: '1005',
+        name: '길동이',
+        contact: '01033334444',
+        isHouseholder: 'HOUSEHOLDER',
+      },
+    ]);
+
+    const insertMock = jest.fn();
+    mockingRepository.createQueryBuilder.mockReturnValue({
+      insert: insertMock,
+      values: jest.fn().mockReturnThis(),
+      execute: jest.fn(),
+    });
+
+    await expect(registerResidentsFromCsv(Buffer.from(''), apartmentMock))
+      .rejects
+      .toThrow('이미 등록된 입주민입니다.')
+
+    expect(mockingRepository.find).toHaveBeenCalled();
+    expect(insertMock).not.toHaveBeenCalled();
+  });
+});
+
+
+/**
+ * 입주민 목록 파일 다운로드
+ */
+describe('입주민 목록 파일 다운로드 residentListCsv', () => {
+  const mockFind = jest.fn();
+
+  beforeEach(() => {
+    (AppDataSource.getRepository as jest.Mock).mockReturnValue({
+      find: mockFind,
+    });
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('입주민 목록 파일 다운로드', async () => {
+    mockFind.mockResolvedValue([
+      {
+        building: '101',
+        unitNumber: '1001',
+        name: '홍길동',
+        contact: '01012345678',
+        isHouseholder: true,
+      },
+      {
+        building: '102',
+        unitNumber: '1002',
+        name: '김철수',
+        contact: null,
+        isHouseholder: false,
+      },
+    ]);
+
+    const result = await residentListCsv('apartment-1');
+
+    expect(result).toContain('"동","호수","이름","연락처","세대주 여부"');
+    expect(result).toContain('"101","1001","홍길동","=""01012345678""","HOUSEHOLDER"');
+    expect(result).toContain('"102","1002","김철수","","MEMBER"');
+  });
+});

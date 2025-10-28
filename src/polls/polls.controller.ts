@@ -1,6 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import { createPoll, getPolls, getPollDetail } from "./polls.service";
+import {
+  createPoll,
+  getPolls,
+  getPollDetail,
+  updatePoll,
+  deletePoll,
+} from "./polls.service";
 import { CreatePollDto } from "./dto/create-poll.dto";
+import { UpdatePollDto, validateUpdatePoll } from "./dto/update-poll.dto";
 import { validatePollQuery } from "./dto/poll-query-params.dto";
 import { BadRequestError } from "../types/error.type";
 import { ZodError } from "zod";
@@ -126,6 +133,96 @@ export const handleGetPollDetail = async (
     const pollDetail = await getPollDetail(pollId, userId, userRole);
 
     res.status(200).json(pollDetail);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 투표 수정 핸들러
+ */
+export const handleUpdatePoll = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+    const { pollId } = req.params;
+
+    if (!userId) {
+      throw new BadRequestError("사용자 정보를 찾을 수 없습니다.");
+    }
+
+    if (!pollId) {
+      throw new BadRequestError("투표 ID가 필요합니다.");
+    }
+
+    // UUID 형식 검증
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(pollId)) {
+      throw new BadRequestError("유효하지 않은 투표 ID 형식입니다.");
+    }
+
+    // 요청 데이터 유효성 검사
+    let updateData: UpdatePollDto;
+    try {
+      updateData = validateUpdatePoll(req.body);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errorMessage = error.issues.map((e) => e.message).join(", ");
+        throw new BadRequestError(`잘못된 요청: ${errorMessage}`);
+      }
+      throw error;
+    }
+
+    // 투표 수정
+    await updatePoll(pollId, userId, userRole, updateData);
+
+    res.status(200).json({
+      message: "투표가 성공적으로 수정되었습니다",
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * 투표 삭제 핸들러
+ */
+export const handleDeletePoll = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const userId = (req as any).user?.id;
+    const userRole = (req as any).user?.role;
+    const { pollId } = req.params;
+
+    if (!userId) {
+      throw new BadRequestError("사용자 정보를 찾을 수 없습니다.");
+    }
+
+    if (!pollId) {
+      throw new BadRequestError("투표 ID가 필요합니다.");
+    }
+
+    // UUID 형식 검증
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(pollId)) {
+      throw new BadRequestError("유효하지 않은 투표 ID 형식입니다.");
+    }
+
+    // 투표 삭제
+    await deletePoll(pollId, userId, userRole);
+
+    res.status(200).json({
+      message: "투표가 성공적으로 삭제되었습니다",
+    });
   } catch (error) {
     next(error);
   }

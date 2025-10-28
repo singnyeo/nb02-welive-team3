@@ -20,22 +20,10 @@ import { HouseholdType, Resident, ResidenceStatus } from '../entities/resident.e
 import { comparePassword, hashPassword } from '../utils/password.util';
 import { ApprovalStatus } from '../entities/approvalStatus.entity';
 
-// ============================
-// : REPOSITORIES
-// ============================
-const userRepository = AppDataSource.getRepository('User');
-const apartmentRepository = AppDataSource.getRepository('Apartment');
-const residentRepository = AppDataSource.getRepository('Resident');
-const complaintBoardRepository = AppDataSource.getRepository('ComplaintBoard');
-const noticeBoardRepository = AppDataSource.getRepository('NoticeBoard');
-const pollBoardRepository = AppDataSource.getRepository('PollBoard');
-
-// ============================
-// : SERVICE FUNCTIONS
-// ============================
-
-// SIGNUP(USER)
 export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
+  const residentRepository = AppDataSource.getRepository('Resident');
   const { username, password, contact, name, email, role, apartmentName, apartmentDong, apartmentHo } = body;
 
   const existUser = await userRepository.findOne({
@@ -53,7 +41,6 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
   }
   const existApartmentId = existApartment.id;
 
-  // 이미 등록된 입주민이 있는지 확인
   let resident;
   let joinStatus = ApprovalStatus.PENDING;
   let isRegistered = false;
@@ -63,24 +50,20 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
   });
 
   if (existResidents.length > 0) {
-    // 입주민 정보와 현재 들어온 정보가 일치하는지 확인
     const isMatch = existResidents.some((resident) => {
       return resident.residents.some((r: Resident) => r.name === name && r.contact === contact);
     });
 
     if (isMatch) {
-      // 기존 입주민과 정보가 일치하면 자동 승인
       resident = existResidents[0].residents.find((r: Resident) => r.name === name && r.contact === contact);
       joinStatus = ApprovalStatus.APPROVED;
       isRegistered = resident.isRegistered;
       if (!isRegistered) {
-        // 기존 입주민이 가입한 적이 없는 경우
         resident.isRegistered = true;
         await residentRepository.save(resident);
       }
     }
   } else {
-    // 새로운 입주민 등록(승인 필요)
     resident = residentRepository.create({
       building: apartmentDong,
       unitNumber: apartmentHo,
@@ -88,10 +71,10 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
       contact: contact,
       apartment: existApartment,
       apartmentId: existApartmentId,
-      isHouseholder: HouseholdType.HOUSEHOLDER, // 가입 시점에는 HOUSEHOLDER 가 기본값
-      residentStatus: ResidenceStatus.RESIDENCE, // 가입 시점에는 RESIDENCE 가 기본값
-      approvalStatus: ApprovalStatus.PENDING, // 가입 시점에는 PENDING 이 기본값
-      isRegistered: true, // 위리브 회원가입으로 생성되기 때문에 자동으로 true 처리
+      isHouseholder: HouseholdType.HOUSEHOLDER,
+      residentStatus: ResidenceStatus.RESIDENCE,
+      approvalStatus: ApprovalStatus.PENDING,
+      isRegistered: true,
     });
     await residentRepository.save(resident);
   }
@@ -116,11 +99,14 @@ export const signup = async (body: z.infer<typeof SignupRequestBodySchema>) => {
 
   await userRepository.save(newUser);
 
+  resident.user = newUser;
+  await residentRepository.save(resident);
+
   return newUser;
 };
 
-// SIGNUP(ADMIN)
 export const signupAdmin = async (body: z.infer<typeof SignupAdminRequestBodySchema>) => {
+  const userRepository = AppDataSource.getRepository('User');
   const {
     username,
     password,
@@ -146,11 +132,11 @@ export const signupAdmin = async (body: z.infer<typeof SignupAdminRequestBodySch
   if (existUser) throw new ConflictError('이미 사용 중인 정보(아이디, 이메일, 전화번호)입니다');
 
   return await AppDataSource.transaction(async (manager) => {
-    const userRepo = manager.withRepository(userRepository);
-    const aptRepo = manager.withRepository(apartmentRepository);
-    const noticeRepo = manager.withRepository(noticeBoardRepository);
-    const complaintRepo = manager.withRepository(complaintBoardRepository);
-    const pollRepo = manager.withRepository(pollBoardRepository);
+    const userRepo = manager.getRepository('User');
+    const aptRepo = manager.getRepository('Apartment');
+    const noticeRepo = manager.getRepository('NoticeBoard');
+    const complaintRepo = manager.getRepository('ComplaintBoard');
+    const pollRepo = manager.getRepository('PollBoard');
 
     let apartment = await aptRepo.findOne({ where: { name: apartmentName } });
 
@@ -207,11 +193,10 @@ export const signupAdmin = async (body: z.infer<typeof SignupAdminRequestBodySch
   });
 };
 
-// SIGNUP(SUPER_ADMIN)
 export const signupSuperAdmin = async (body: z.infer<typeof SignupSuperAdminRequestBodySchema>) => {
+  const userRepository = AppDataSource.getRepository('User');
   const { username, password, contact, name, email, role, joinStatus } = body;
 
-  // 이미 사용 중인 username, email, contact 인지 확인
   const existUser = await userRepository.findOne({
     where: [{ username }, { email }, { contact }],
   });
@@ -237,8 +222,8 @@ export const signupSuperAdmin = async (body: z.infer<typeof SignupSuperAdminRequ
   return newSuperAdmin;
 };
 
-// LOGIN
 export const login = async (body: z.infer<typeof LoginRequestBodySchema>) => {
+  const userRepository = AppDataSource.getRepository('User');
   const { username, password } = body;
   const user = await userRepository.findOne({
     where: { username },
@@ -263,6 +248,7 @@ export const login = async (body: z.infer<typeof LoginRequestBodySchema>) => {
 };
 
 export const addRefreshToken = async (userId: string, refreshToken: string) => {
+  const userRepository = AppDataSource.getRepository('User');
   const user = await userRepository.findOne({
     where: { id: userId },
   });
@@ -273,10 +259,8 @@ export const addRefreshToken = async (userId: string, refreshToken: string) => {
   await userRepository.save(user);
 };
 
-// LOGOUT
-// 지금은 별다른 로직이 없습니다.
-// 차후 로그아웃 후 토큰 블랙리스트 처리를 위한 로직이 추가될 경우 대비
 export const logout = async (userId: string) => {
+  const userRepository = AppDataSource.getRepository('User');
   const existUser = await userRepository.findOne({
     where: { id: userId },
   });
@@ -287,6 +271,7 @@ export const logout = async (userId: string) => {
 };
 
 export const removeRefreshToken = async (userId: string) => {
+  const userRepository = AppDataSource.getRepository('User');
   const user = await userRepository.findOne({
     where: { id: userId },
   });
@@ -299,8 +284,8 @@ export const removeRefreshToken = async (userId: string) => {
   return;
 };
 
-// REFRESH
 export const refresh = async (userId: string, refreshToken: string) => {
+  const userRepository = AppDataSource.getRepository('User');
   const user = await userRepository.findOne({
     where: { id: userId },
     relations: { apartment: true, resident: true },
@@ -316,6 +301,8 @@ export const refresh = async (userId: string, refreshToken: string) => {
 };
 
 export const updateAdminStatus = async (adminId: string, status: ApprovalStatus) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
   const admin = await userRepository.findOne({
     where: { id: adminId, role: UserRole.ADMIN },
     relations: { apartment: true },
@@ -326,11 +313,9 @@ export const updateAdminStatus = async (adminId: string, status: ApprovalStatus)
 
   admin.joinStatus = status;
   admin.isActive = true;
-
   await userRepository.save(admin);
 
   const apartment = admin.apartment;
-
   if (apartment) {
     apartment.adminId = admin.id;
     apartment.apartmentStatus = admin.joinStatus;
@@ -341,6 +326,8 @@ export const updateAdminStatus = async (adminId: string, status: ApprovalStatus)
 };
 
 export const updateAdminsStatus = async (status: ApprovalStatus) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
   const admins = await userRepository.find({
     where: { role: UserRole.ADMIN, joinStatus: ApprovalStatus.PENDING },
     relations: { apartment: true },
@@ -367,6 +354,8 @@ export const updateAdminsStatus = async (status: ApprovalStatus) => {
 };
 
 export const updateAdmin = async (adminId: string, body: z.infer<typeof UpdateAdminRequestBodySchema>) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
   const { contact, email, description, apartmentName, apartmentAddress, apartmentManagementNumber } = body;
 
   console.log('UpdateAdmin body:', body);
@@ -419,6 +408,8 @@ export const updateAdmin = async (adminId: string, body: z.infer<typeof UpdateAd
 };
 
 export const deleteAdmin = async (adminId: string) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
   const admin = await userRepository.findOne({
     where: { id: adminId, role: UserRole.ADMIN },
     relations: { apartment: true },
@@ -432,7 +423,6 @@ export const deleteAdmin = async (adminId: string) => {
     apartment.adminId = null;
     apartment.apartmentStatus = ApprovalStatus.PENDING;
     await apartmentRepository.save(apartment);
-
     await apartmentRepository.softDelete(apartment.id);
   }
 
@@ -442,6 +432,9 @@ export const deleteAdmin = async (adminId: string) => {
 };
 
 export const cleanup = async (userId: string) => {
+  const userRepository = AppDataSource.getRepository('User');
+  const apartmentRepository = AppDataSource.getRepository('Apartment');
+  const residentRepository = AppDataSource.getRepository('Resident');
   const user = await userRepository.findOne({
     where: { id: userId },
   });
@@ -466,7 +459,6 @@ export const cleanup = async (userId: string) => {
         apartment.adminId = null;
         apartment.apartmentStatus = ApprovalStatus.PENDING;
         await apartmentRepository.save(apartment);
-
         await apartmentRepository.softDelete(apartment.id);
       }
       await userRepository.softDelete(admin.id);
@@ -481,4 +473,62 @@ export const cleanup = async (userId: string) => {
       await residentRepository.softDelete(resident.id);
     }
   }
+};
+
+export const updateResidentStatus = async (residentId: string, status: ApprovalStatus) => {
+  const residentRepository = AppDataSource.getRepository('Resident');
+  const userRepository = AppDataSource.getRepository('User');
+
+  const resident = await residentRepository.findOne({
+    where: { id: residentId },
+    relations: { user: true },
+  });
+
+  if (!resident) {
+    throw new NotFoundError('존재하지 않는 세대원입니다.');
+  }
+
+  if (!resident.user) {
+    throw new NotFoundError('세대원에 연결된 사용자 정보가 없습니다.');
+  }
+
+  if (resident.user.joinStatus === status) {
+    return;
+  }
+
+  resident.user.joinStatus = status;
+  await userRepository.save(resident.user);
+};
+
+export const updateResidentsStatus = async (status: ApprovalStatus) => {
+  const residentRepository = AppDataSource.getRepository('Resident');
+  const userRepository = AppDataSource.getRepository('User');
+
+  const residents = await residentRepository
+    .createQueryBuilder('resident')
+    .innerJoinAndSelect('resident.user', 'user')
+    .where('user.joinStatus = :status', { status: ApprovalStatus.PENDING })
+    .getMany();
+
+  if (residents.length === 0) {
+    throw new NotFoundError('승인 대기 중인 세대원이 없습니다.');
+  }
+
+  const updatedUsers = [];
+
+  for (const resident of residents) {
+    if (!resident.user) {
+      continue;
+    }
+
+    resident.approvalStatus = status;
+    resident.user.joinStatus = status;
+    updatedUsers.push(userRepository.save(resident.user));
+  }
+
+  await Promise.all(updatedUsers);
+
+  await residentRepository.save(residents);
+
+  return;
 };

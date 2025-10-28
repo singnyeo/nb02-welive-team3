@@ -5,13 +5,24 @@ services:
     image: postgres:16
     restart: always
     ports:
-      - '5432:5432'
+      - '15432:5432'
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       POSTGRES_DB: welive
     volumes:
       - db_data:/var/lib/postgresql/data
+  test_db:
+    image: postgres:16
+    restart: always
+    ports:
+      - '15433:5432' 
+    environment:
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+      POSTGRES_DB: welive_test 
+    volumes:
+      - test_db_data:/var/lib/postgresql/data
 
   pgadmin:
     image: dpage/pgadmin4:latest
@@ -28,4 +39,5 @@ services:
 
 volumes:
   db_data:
+  test_db_data:
   pgadmin_data:

@@ -1,21 +1,27 @@
-import z from 'zod';
-import { ApartmentsRequestParamsSchema, GetApartmentsRequestQuerySchema } from './apartments.dto';
-import { AppDataSource } from '../config/data-source';
-import { Apartment } from '../entities/apartment.entity';
-import { ILike } from 'typeorm';
+import z from "zod";
+import {
+  ApartmentsRequestParamsSchema,
+  GetApartmentsRequestQuerySchema,
+} from "./apartments.dto";
+import { AppDataSource } from "../config/data-source";
+import { Apartment } from "../entities/apartment.entity";
+import { ILike } from "typeorm";
 
-const apartmentRepository = AppDataSource.getRepository(Apartment);
+export const getApartments = async (
+  query?: z.infer<typeof GetApartmentsRequestQuerySchema>
+) => {
+  const apartmentRepository = AppDataSource.getRepository(Apartment);
 
-export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQuerySchema>) => {
   const { name, address } = query || {};
 
   const apartments = await apartmentRepository.find({
-    where: [name ? { name: ILike(`%${name}%`) } : {}, address ? { address: ILike(`%${address}%`) } : {}],
-    relations: ['users'],
+    where: [
+      name ? { name: ILike(`%${name}%`) } : {},
+      address ? { address: ILike(`%${address}%`) } : {},
+    ],
+    relations: ["users"],
     withDeleted: false,
   });
-
-  console.log('Apartments:', apartments);
 
   const formattedApartments = apartments.map((apartment) => {
     const admin = apartment.users.find((u) => u.id === apartment.adminId);
@@ -45,12 +51,16 @@ export const getApartments = async (query?: z.infer<typeof GetApartmentsRequestQ
   return formattedApartments;
 };
 
-export const getApartment = async (params: z.infer<typeof ApartmentsRequestParamsSchema>) => {
+export const getApartment = async (
+  params: z.infer<typeof ApartmentsRequestParamsSchema>
+) => {
+  const apartmentRepository = AppDataSource.getRepository(Apartment);
+
   const { id } = params;
 
   const apartment = await apartmentRepository.findOne({
     where: { id },
-    relations: ['users'],
+    relations: ["users", "pollBoard"],
   });
 
   if (!apartment) {
@@ -78,5 +88,6 @@ export const getApartment = async (params: z.infer<typeof ApartmentsRequestParam
     adminName: admin?.name || null,
     adminContact: admin?.contact || null,
     adminEmail: admin?.email || null,
+    pollBoardId: apartment.pollBoard?.id || null,
   };
 };

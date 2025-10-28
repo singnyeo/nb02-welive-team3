@@ -1,13 +1,14 @@
 import { AppDataSource } from '../config/data-source';
-import { CreateResidentDto, ResidentResponseDto, ResidentResponseSchema } from './dtos/create-resident.dto';
+import { CreateResidentDto, ResidentResponseDto } from './dtos/create-resident.dto';
 import { Resident, HouseholdType, ResidenceStatus } from '../entities/resident.entity';
 import { User } from '../entities/user.entity';
-import { ConflictError, NotFoundError } from '../types/error.type';
+import { BadRequestError, ConflictError, NotFoundError } from '../types/error.type';
 import { Apartment } from '../entities/apartment.entity';
-import { parseCsvBuffer } from './resident-csv.util';
+import { parseCsvBuffer } from './utils/resident-csv.util';
 import { GetResidentListParams } from './dtos/resident-filter.dto';
-import { UpdatedResidentDto } from './dtos/update-resident.dto';
+import { UpdatedResidentDto, updatedResidentSchema } from './dtos/update-resident.dto';
 import { CsvResidentDto, csvResidentSchema } from './dtos/resident-csv.dto';
+import { residentResponse } from './utils/resident.util';
 
 /**
  * 개별 등록용
@@ -49,19 +50,7 @@ export const createResident = async (
     throw new NotFoundError('입주민 정보 조회에 실패했습니다.');
   }
 
-  return ResidentResponseSchema.parse({
-    id: fullResident.id,
-    userId: fullResident.user?.id ?? null,
-    building: fullResident.building,
-    unitNumber: fullResident.unitNumber,
-    contact: fullResident.contact,
-    email: fullResident.user?.email ?? null,
-    name: fullResident.name,
-    residenceStatus: fullResident.residenceStatus,
-    isHouseholder: fullResident.isHouseholder,
-    isRegistered: fullResident.isRegistered,
-    approvalStatus: fullResident.user?.joinStatus ?? 'PENDING',
-  });
+  return residentResponse(fullResident);
 };
 
 /**
@@ -113,19 +102,8 @@ export const createResidentFromUser = async (
 
     await queryRunner.commitTransaction();
 
-    return {
-      id: savedResident.id,
-      userId: savedResident.user?.id ?? null,
-      building: savedResident.building,
-      unitNumber: savedResident.unitNumber,
-      contact: savedResident.contact,
-      email: savedResident.user?.email ?? null,
-      name: savedResident.name,
-      residenceStatus: savedResident.residenceStatus,
-      isHouseholder: savedResident.isHouseholder,
-      isRegistered: savedResident.isRegistered,
-      approvalStatus: savedResident.user?.joinStatus ?? 'PENDING',
-    };
+    return residentResponse(savedResident);
+
   } catch (error: unknown) {
     await queryRunner.rollbackTransaction();
     throw error;
@@ -146,57 +124,50 @@ export const registerResidentsFromCsv = async (
   apartment: Apartment
 ): Promise<{ count: number }> => {
   // CSV 파싱 -> 배열로 변환
-  const parsedRows = await parseCsvBuffer(buffer);
+  const parsedRows: CsvResidentDto[] = await parseCsvBuffer(buffer);
 
   const repository = AppDataSource.getRepository(Resident);
 
   // 유효성 검사
   const validRows: CsvResidentDto[] = [];
-  const invaildRows: { row: number; errors: string }[] = [];
+  const invalidRows: { row: number; errors: string }[] = [];
 
   parsedRows.forEach((row, index) => {
     const result = csvResidentSchema.safeParse(row);
     if (result.success) {
       validRows.push(result.data);
     } else {
-      invaildRows.push({ row: index + 1, errors: result.error.message });
+      invalidRows.push({ row: index + 1, errors: result.error.message });
     }
   });
 
-  if (invaildRows.length > 0) {
-    const errorMessages = invaildRows.map(r => `Row ${r.row}: ${r.errors}`).join('; ');
+  if (invalidRows.length > 0) {
+    const errorMessages = invalidRows.map(r => `Row ${r.row}: ${r.errors}`).join('; ');
     throw new ConflictError(`CSV 파일에 유효하지 않은 데이터가 포함되어 있습니다. ${errorMessages}`);
   }
 
-  // 중복 검사 key: 동, 호수, 이름
-  // 기존에 등록된 입주민과 비교하여 중복 제거
-  const keys = parsedRows.map(row => ({
-    building: row.building,
-    unitNumber: row.unitNumber,
-    name: row.name,
-  }));
-
-  // 동, 호수, 이름 기준으로 기존 입주민 조회
-  const existingResidents = await repository
-    .createQueryBuilder('resident')
-    .where('resident.apartmentId = :apartmentId', { apartmentId: apartment.id })
-    .andWhere('(resident.building, resident.unitNumber, resident.name) IN (:...keys)',
-      { keys: keys.map(k => [k.building, k.unitNumber, k.name]) }
-    )
-    .getMany(); // 배열로 반환
+  const existingResidents = await repository.find({
+    where: validRows.map(row => ({
+      building: row.building,
+      unitNumber: row.unitNumber,
+      name: row.name,
+      apartment: { id: apartment.id },
+    })),
+  });
 
   // 조회된 기존 입주민을 Set으로 변환
   const existingSet = new Set(
     existingResidents.map(resident =>
       `${resident.building}-${resident.unitNumber}-${resident.name}`
-    ));
+    )
+  );
 
   // 중복되지 않은 입주민만 데이터베이스에 저장
-  const insertRows = parsedRows
+  const insertRows = validRows
     .filter(row => !existingSet.has(`${row.building}-${row.unitNumber}-${row.name}`))
     .map(row => ({
       ...row,
-      apartment,
+      apartmentId: apartment.id,
       isRegistered: false,
       residenceStatus: ResidenceStatus.RESIDENCE,
     }));
@@ -207,8 +178,9 @@ export const registerResidentsFromCsv = async (
       .createQueryBuilder()
       .insert()
       .values(insertRows)
-      .execute(); // 한 번만 호출 
+      .execute();
   }
+
   return { count: insertRows.length };
 };
 
@@ -232,8 +204,10 @@ export const getResidentList = async (params: GetResidentListParams) => {
   if (params.residenceStatus) {
     query.andWhere('resident.residenceStatus = :residenceStatus', { residenceStatus: params.residenceStatus });
   }
-  if (params.isRegistered !== undefined) {
-    query.andWhere('resident.isRegistered = :isRegistered', { isRegistered: params.isRegistered });
+  if (typeof params.isRegistered === 'boolean') {
+    query.andWhere('resident.isRegistered = :isRegistered', {
+      isRegistered: params.isRegistered,
+    });
   }
   if (params.name) { // 이름 검색
     query.andWhere('resident.name LIKE :name', { name: `%${params.name}%` });
@@ -250,21 +224,35 @@ export const getResidentList = async (params: GetResidentListParams) => {
     .addOrderBy('resident.isHouseholder', 'DESC')
     .getMany();
 
-  return residents.map(resident => ({
-    id: resident.id,
-    userId: resident.user?.id ?? null,
-    building: resident.building,
-    unitNumber: resident.unitNumber,
-    contact: resident.contact,
-    email: resident.user?.email ?? null,
-    name: resident.name,
-    residenceStatus: resident.residenceStatus,
-    isHouseholder: resident.isHouseholder,
-    isRegistered: resident.isRegistered,
-    approvalStatus: resident.user?.joinStatus ?? 'PENDING',
-  }));
+  return {
+    residents: residents.map(residentResponse),
+  };
 }
 
+/**
+ * 입주민 목록 파일 다운로드
+ */
+
+export const residentListCsv = async (apartmentId: string): Promise<string> => {
+  const repository = AppDataSource.getRepository(Resident);
+
+  const residents = await repository.find({
+    where: { apartment: { id: apartmentId } },
+    order: {
+      building: 'ASC',
+      unitNumber: 'ASC',
+    }
+  });
+
+  const header = `"동","호수","이름","연락처","세대주 여부"`;
+  const rows = residents.map(resident => {
+    const householder = resident.isHouseholder ? "HOUSEHOLDER" : "MEMBER";
+    const safeContact = resident.contact ? `=""${resident.contact}""` : '';
+    return `"${resident.building}","${resident.unitNumber}","${resident.name}","${safeContact}","${householder}"`;
+  });
+
+  return '\uFEFF' + [header, ...rows].join('\n');
+};
 
 /**
  * 입주민 상세 조회
@@ -287,19 +275,7 @@ export const residentListDetail = async (
     throw new NotFoundError('입주민 정보를 찾을 수 없습니다.');
   }
 
-  return {
-    id: resident.id,
-    userId: resident.user?.id ?? null,
-    building: resident.building,
-    unitNumber: resident.unitNumber,
-    contact: resident.contact,
-    email: resident.user?.email ?? null,
-    name: resident.name,
-    residenceStatus: resident.residenceStatus,
-    isHouseholder: resident.isHouseholder,
-    isRegistered: resident.isRegistered,
-    approvalStatus: resident.user?.joinStatus ?? 'PENDING',
-  };
+  return residentResponse(resident);
 };
 
 /**
@@ -326,23 +302,16 @@ export const updateResident = async (
     throw new NotFoundError('입주민 정보를 찾을 수 없습니다.');
   }
 
-  Object.assign(resident, updateData);
+  const parsed = updatedResidentSchema.safeParse(updateData);
+  if (!parsed.success) {
+    throw new BadRequestError(`입력값이 유효하지 않습니다: ${parsed.error.message}`);
+  }
+
+  Object.assign(resident, parsed.data);
 
   const updated = await repository.save(resident);
 
-  return {
-    id: updated.id,
-    userId: updated.user?.id ?? null,
-    building: updated.building,
-    unitNumber: updated.unitNumber,
-    contact: updated.contact,
-    email: updated.user?.email ?? null,
-    name: updated.name,
-    residenceStatus: updated.residenceStatus,
-    isHouseholder: updated.isHouseholder,
-    isRegistered: updated.isRegistered,
-    approvalStatus: updated.user?.joinStatus ?? 'PENDING',
-  };
+  return residentResponse(updated);
 }
 
 /**

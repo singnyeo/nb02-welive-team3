@@ -15,6 +15,8 @@ import {
   handleCreatePoll,
   handleGetPolls,
   handleGetPollDetail,
+  handleUpdatePoll,
+  handleDeletePoll,
 } from "../polls.controller";
 
 const createTestApp = () => {
@@ -30,6 +32,16 @@ const createTestApp = () => {
     handleGetPollDetail
   );
   app.post("/api/polls", mockAllowMiddleware.allow("ADMIN"), handleCreatePoll);
+  app.patch(
+    "/api/polls/:pollId",
+    mockAllowMiddleware.allow("ADMIN"),
+    handleUpdatePoll
+  );
+  app.delete(
+    "/api/polls/:pollId",
+    mockAllowMiddleware.allow("ADMIN"),
+    handleDeletePoll
+  );
 
   app.use(
     (
@@ -178,7 +190,6 @@ describe("Polls API E2E Tests", () => {
       status: "PENDING",
       title: "2025년 아파트 외벽 도색 투표",
       content: "아파트 외벽 도색 색상을 결정하는 투표입니다.",
-      buildingPermission: 101,
       startDate: "2025-02-01T09:00:00Z",
       endDate: "2025-02-07T18:00:00Z",
       options: [{ title: "베이지색" }, { title: "회색" }, { title: "흰색" }],
@@ -281,7 +292,7 @@ describe("Polls API E2E Tests", () => {
     it("유효하지 않은 동 번호일 때 400 에러를 반환해야 함", async () => {
       const invalidData = {
         ...validPollData,
-        buildingPermission: 200, // 범위 밖
+        buildingPermission: 106, // 범위 밖
       };
 
       const response = await request(app)
@@ -368,11 +379,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-1",
             title: "101동 전용 투표",
             writerName: "작성자1",
-            buildingPermission: 101,
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
             startDate: new Date("2024-01-10"),
-            endDate: new Date("2024-01-20"),
+            endDate: new Date("2099-12-31"),
             status: "PENDING",
           },
           {
@@ -380,11 +390,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-2",
             title: "전체 공개 투표",
             writerName: "작성자2",
-            buildingPermission: null,
             createdAt: new Date("2024-01-02"),
             updatedAt: new Date("2024-01-02"),
             startDate: new Date("2024-01-15"),
-            endDate: new Date("2024-01-25"),
+            endDate: new Date("2099-12-31"),
             status: "IN_PROGRESS",
           },
           {
@@ -396,7 +405,7 @@ describe("Polls API E2E Tests", () => {
             createdAt: new Date("2024-01-03"),
             updatedAt: new Date("2024-01-03"),
             startDate: new Date("2024-01-20"),
-            endDate: new Date("2024-01-30"),
+            endDate: new Date("2099-12-31"),
             status: "CLOSED",
           },
         ];
@@ -433,11 +442,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-1",
             title: "101동 전용 투표",
             writerName: "작성자1",
-            buildingPermission: 101,
             createdAt: new Date("2024-01-01"),
             updatedAt: new Date("2024-01-01"),
             startDate: new Date("2024-01-10"),
-            endDate: new Date("2024-01-20"),
+            endDate: new Date("2099-12-31"),
             status: "PENDING",
           },
           {
@@ -445,11 +453,10 @@ describe("Polls API E2E Tests", () => {
             userId: "user-2",
             title: "전체 공개 투표",
             writerName: "작성자2",
-            buildingPermission: null,
             createdAt: new Date("2024-01-02"),
             updatedAt: new Date("2024-01-02"),
             startDate: new Date("2024-01-15"),
-            endDate: new Date("2024-01-25"),
+            endDate: new Date("2099-12-31"),
             status: "IN_PROGRESS",
           },
         ];
@@ -483,11 +490,10 @@ describe("Polls API E2E Tests", () => {
           userId: `user-${i + 1}`,
           title: `투표 ${i + 1}`,
           writerName: `작성자${i + 1}`,
-          buildingPermission: null,
           createdAt: new Date(`2024-01-${(i + 1).toString().padStart(2, "0")}`),
           updatedAt: new Date(`2024-01-${(i + 1).toString().padStart(2, "0")}`),
           startDate: new Date("2024-01-10"),
-          endDate: new Date("2024-01-20"),
+          endDate: new Date("2099-12-31"),
           status: "PENDING",
         }));
 
@@ -570,11 +576,10 @@ describe("Polls API E2E Tests", () => {
           userId: "user-uuid",
           title: "테스트 투표",
           writerName: "테스트 작성자",
-          buildingPermission: 101,
           createdAt: new Date("2024-01-01T10:00:00Z"),
           updatedAt: new Date("2024-01-02T10:00:00Z"),
-          startDate: new Date("2024-01-10T00:00:00Z"),
-          endDate: new Date("2024-01-20T23:59:59Z"),
+          startDate: new Date("2024-01-01T00:00:00Z"),
+          endDate: new Date("2099-12-31T23:59:59Z"),
           status: "PENDING",
         };
 
@@ -594,7 +599,6 @@ describe("Polls API E2E Tests", () => {
               userId: expect.any(String),
               title: expect.any(String),
               writerName: expect.any(String),
-              buildingPermission: expect.any(Number),
               createdAt: expect.stringMatching(
                 /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
               ),
@@ -666,12 +670,11 @@ describe("Polls API E2E Tests", () => {
           title: "아파트 외벽 도색 투표",
           content: "외벽 도색 색상을 결정하는 투표입니다.",
           writerName: "관리자A",
-          buildingPermission: 101,
           boardId: "board-123",
           createdAt: new Date("2024-01-01T10:00:00Z"),
           updatedAt: new Date("2024-01-02T10:00:00Z"),
-          startDate: new Date("2024-01-10T00:00:00Z"),
-          endDate: new Date("2024-01-20T23:59:59Z"),
+          startDate: new Date("2024-01-01T00:00:00Z"),
+          endDate: new Date("2099-12-31T23:59:59Z"),
           status: "IN_PROGRESS",
           user: { id: "author-123", name: "관리자A" },
           options: [
@@ -752,7 +755,6 @@ describe("Polls API E2E Tests", () => {
             title: "아파트 외벽 도색 투표",
             content: "외벽 도색 색상을 결정하는 투표입니다.",
             writerName: "관리자A",
-            buildingPermission: 101,
             status: "IN_PROGRESS",
             boardName: "주민투표 게시판",
             options: expect.arrayContaining([
@@ -764,6 +766,501 @@ describe("Polls API E2E Tests", () => {
             ]),
           });
         }
+      });
+    });
+    describe("PATCH /api/polls/:pollId", () => {
+      let adminToken: string;
+      let userToken: string;
+      const mockPollId = "550e8400-e29b-41d4-a716-446655440000";
+
+      beforeEach(() => {
+        adminToken = "admin-token";
+        userToken = "user-token";
+
+        // 미래 날짜의 투표 (수정 가능)
+        const mockPoll = {
+          pollId: mockPollId,
+          userId: "admin-123",
+          title: "원본 제목",
+          content: "원본 내용",
+          writerName: "관리자",
+          boardId: "board-123",
+          createdAt: new Date("2024-01-01"),
+          updatedAt: new Date("2024-01-01"),
+          startDate: new Date("2025-12-01T00:00:00Z"), // 미래 날짜
+          endDate: new Date("2025-12-10T23:59:59Z"),
+          status: "PENDING",
+          options: [
+            { id: "opt-1", title: "옵션1", voteCount: 0 },
+            { id: "opt-2", title: "옵션2", voteCount: 0 },
+          ],
+        };
+
+        const mockPollBoard = {
+          id: "board-123",
+          apartmentId: "apt-123",
+        };
+
+        jest
+          .spyOn(AppDataSource, "getRepository")
+          .mockImplementation((entity: any): any => {
+            const entityName =
+              typeof entity === "string" ? entity : entity?.name;
+
+            if (entityName === "User") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.id === "admin-123") {
+                    return Promise.resolve({
+                      id: "admin-123",
+                      name: "관리자",
+                      apartment: { id: "apt-123" },
+                    });
+                  }
+                  if (options?.where?.id === "user-123") {
+                    return Promise.resolve({
+                      id: "user-123",
+                      name: "일반사용자",
+                      apartment: { id: "apt-123" },
+                    });
+                  }
+                  return Promise.resolve(null);
+                }),
+              };
+            }
+
+            if (entityName === "Poll") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.pollId === mockPollId) {
+                    return Promise.resolve(mockPoll);
+                  }
+                  return Promise.resolve(null);
+                }),
+              };
+            }
+
+            if (entityName === "PollBoard") {
+              return {
+                findOne: jest.fn().mockResolvedValue(mockPollBoard),
+              };
+            }
+
+            if (entityName === "Apartment") {
+              return {
+                findOne: jest.fn().mockResolvedValue({
+                  id: "apt-123",
+                  startDongNumber: "101",
+                  endDongNumber: "105",
+                }),
+              };
+            }
+
+            if (entityName === "PollOption") {
+              return {
+                create: jest.fn().mockImplementation((data: any) => data),
+              };
+            }
+
+            return {};
+          });
+
+        // QueryRunner Mock (타입 단언 추가)
+        const mockQR = {
+          connect: jest.fn().mockResolvedValue(undefined),
+          startTransaction: jest.fn().mockResolvedValue(undefined),
+          manager: {
+            update: jest.fn().mockResolvedValue({ affected: 1 }),
+            delete: jest.fn().mockResolvedValue({ affected: 1 }),
+            save: jest.fn().mockResolvedValue([]),
+          },
+          commitTransaction: jest.fn().mockResolvedValue(undefined),
+          rollbackTransaction: jest.fn().mockResolvedValue(undefined),
+          release: jest.fn().mockResolvedValue(undefined),
+        } as any;
+
+        jest.spyOn(AppDataSource, "createQueryRunner").mockReturnValue(mockQR);
+      });
+
+      const validUpdateData = {
+        title: "수정된 제목",
+        content: "수정된 내용",
+        buildingPermission: 102,
+        startDate: "2025-12-05T00:00:00Z",
+        endDate: "2025-12-15T23:59:59Z",
+        status: "IN_PROGRESS",
+        options: [
+          { title: "새 옵션1" },
+          { title: "새 옵션2" },
+          { title: "새 옵션3" },
+        ],
+      };
+
+      describe("성공 케이스", () => {
+        it("관리자가 투표를 성공적으로 수정할 수 있어야 함", async () => {
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(validUpdateData);
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveProperty(
+            "message",
+            "투표가 성공적으로 수정되었습니다"
+          );
+        });
+      });
+
+      describe("권한 테스트", () => {
+        it("일반 사용자는 투표를 수정할 수 없어야 함", async () => {
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${userToken}`])
+            .send(validUpdateData);
+
+          expect(response.status).toBe(403);
+          expect(response.body).toHaveProperty("message");
+          expect(response.body.message).toContain("권한");
+        });
+
+        it("인증되지 않은 사용자는 투표를 수정할 수 없어야 함", async () => {
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .send(validUpdateData);
+
+          expect(response.status).toBe(401);
+          expect(response.body).toHaveProperty("message");
+        });
+      });
+
+      describe("유효성 검사", () => {
+        it("존재하지 않는 투표 수정 시 404 에러를 반환해야 함", async () => {
+          const nonExistentId = "550e8400-e29b-41d4-a716-446655440001";
+
+          const response = await request(app)
+            .patch(`/api/polls/${nonExistentId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(validUpdateData);
+
+          expect(response.status).toBe(404);
+          expect(response.body.message).toContain("투표를 찾을 수 없습니다");
+        });
+
+        it("잘못된 UUID 형식일 때 400 에러를 반환해야 함", async () => {
+          const response = await request(app)
+            .patch("/api/polls/invalid-uuid")
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(validUpdateData);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("유효하지 않은 투표 ID");
+        });
+
+        it("종료일이 시작일보다 빠를 때 400 에러를 반환해야 함", async () => {
+          const invalidData = {
+            ...validUpdateData,
+            startDate: "2025-12-15T00:00:00Z",
+            endDate: "2025-12-05T23:59:59Z",
+          };
+
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(invalidData);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("종료일은 시작일보다");
+        });
+
+        it("필수 필드가 누락된 경우 400 에러를 반환해야 함", async () => {
+          const invalidData = {
+            title: "제목만 있음",
+            // content, startDate, endDate 등 누락
+          };
+
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(invalidData);
+
+          expect(response.status).toBe(400);
+          expect(response.body).toHaveProperty("message");
+        });
+
+        it("옵션이 2개 미만일 때 400 에러를 반환해야 함", async () => {
+          const invalidData = {
+            ...validUpdateData,
+            options: [{ title: "옵션 1개만" }],
+          };
+
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(invalidData);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("최소 2개");
+        });
+      });
+
+      describe("비즈니스 로직 테스트", () => {
+        it("이미 시작된 투표는 수정할 수 없어야 함", async () => {
+          // 과거 날짜의 투표로 Mock 변경
+          const startedPoll = {
+            pollId: mockPollId,
+            userId: "admin-123",
+            title: "이미 시작된 투표",
+            content: "내용",
+            writerName: "관리자",
+            boardId: "board-123",
+            createdAt: new Date("2024-01-01"),
+            updatedAt: new Date("2024-01-01"),
+            startDate: new Date("2024-01-01T00:00:00Z"), // 과거 날짜
+            endDate: new Date("2024-01-10T23:59:59Z"),
+            status: "IN_PROGRESS",
+            options: [],
+          };
+
+          jest
+            .spyOn(AppDataSource, "getRepository")
+            .mockImplementation((entity: any): any => {
+              const entityName =
+                typeof entity === "string" ? entity : entity?.name;
+
+              if (entityName === "User") {
+                return {
+                  findOne: jest.fn().mockResolvedValue({
+                    id: "admin-123",
+                    name: "관리자",
+                    apartment: { id: "apt-123" },
+                  }),
+                };
+              }
+
+              if (entityName === "Poll") {
+                return {
+                  findOne: jest.fn().mockResolvedValue(startedPoll),
+                };
+              }
+
+              if (entityName === "PollBoard") {
+                return {
+                  findOne: jest.fn().mockResolvedValue({
+                    id: "board-123",
+                    apartmentId: "apt-123",
+                  }),
+                };
+              }
+
+              return {};
+            });
+
+          const response = await request(app)
+            .patch(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`])
+            .send(validUpdateData);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("이미 시작된 투표");
+        });
+      });
+    });
+
+    describe("DELETE /api/polls/:pollId", () => {
+      let adminToken: string;
+      let userToken: string;
+      const mockPollId = "550e8400-e29b-41d4-a716-446655440000";
+
+      beforeEach(() => {
+        adminToken = "admin-token";
+        userToken = "user-token";
+
+        // 미래 날짜의 투표 (삭제 가능)
+        const mockPoll = {
+          pollId: mockPollId,
+          userId: "admin-123",
+          title: "삭제할 투표",
+          content: "내용",
+          writerName: "관리자",
+          boardId: "board-123",
+          createdAt: new Date("2024-01-01"),
+          updatedAt: new Date("2024-01-01"),
+          startDate: new Date("2025-12-01T00:00:00Z"), // 미래 날짜
+          endDate: new Date("2025-12-10T23:59:59Z"),
+          status: "PENDING",
+        };
+
+        const mockPollBoard = {
+          id: "board-123",
+          apartmentId: "apt-123",
+        };
+
+        jest
+          .spyOn(AppDataSource, "getRepository")
+          .mockImplementation((entity: any): any => {
+            const entityName =
+              typeof entity === "string" ? entity : entity?.name;
+
+            if (entityName === "User") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.id === "admin-123") {
+                    return Promise.resolve({
+                      id: "admin-123",
+                      name: "관리자",
+                      apartment: { id: "apt-123" },
+                    });
+                  }
+                  if (options?.where?.id === "user-123") {
+                    return Promise.resolve({
+                      id: "user-123",
+                      name: "일반사용자",
+                      apartment: { id: "apt-123" },
+                    });
+                  }
+                  return Promise.resolve(null);
+                }),
+              };
+            }
+
+            if (entityName === "Poll") {
+              return {
+                findOne: jest.fn().mockImplementation((options) => {
+                  if (options?.where?.pollId === mockPollId) {
+                    return Promise.resolve(mockPoll);
+                  }
+                  return Promise.resolve(null);
+                }),
+                delete: jest.fn().mockResolvedValue({ affected: 1 }),
+              };
+            }
+
+            if (entityName === "PollBoard") {
+              return {
+                findOne: jest.fn().mockResolvedValue(mockPollBoard),
+              };
+            }
+
+            return {};
+          });
+      });
+
+      describe("성공 케이스", () => {
+        it("관리자가 투표를 성공적으로 삭제할 수 있어야 함", async () => {
+          const response = await request(app)
+            .delete(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`]);
+
+          expect(response.status).toBe(200);
+          expect(response.body).toHaveProperty(
+            "message",
+            "투표가 성공적으로 삭제되었습니다"
+          );
+        });
+      });
+
+      describe("권한 테스트", () => {
+        it("일반 사용자는 투표를 삭제할 수 없어야 함", async () => {
+          const response = await request(app)
+            .delete(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${userToken}`]);
+
+          expect(response.status).toBe(403);
+          expect(response.body).toHaveProperty("message");
+          expect(response.body.message).toContain("권한");
+        });
+
+        it("인증되지 않은 사용자는 투표를 삭제할 수 없어야 함", async () => {
+          const response = await request(app).delete(
+            `/api/polls/${mockPollId}`
+          );
+
+          expect(response.status).toBe(401);
+          expect(response.body).toHaveProperty("message");
+        });
+      });
+
+      describe("유효성 검사", () => {
+        it("존재하지 않는 투표 삭제 시 404 에러를 반환해야 함", async () => {
+          const nonExistentId = "550e8400-e29b-41d4-a716-446655440001";
+
+          const response = await request(app)
+            .delete(`/api/polls/${nonExistentId}`)
+            .set("Cookie", [`access-token=${adminToken}`]);
+
+          expect(response.status).toBe(404);
+          expect(response.body.message).toContain("투표를 찾을 수 없습니다");
+        });
+
+        it("잘못된 UUID 형식일 때 400 에러를 반환해야 함", async () => {
+          const response = await request(app)
+            .delete("/api/polls/invalid-uuid")
+            .set("Cookie", [`access-token=${adminToken}`]);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("유효하지 않은 투표 ID");
+        });
+      });
+
+      describe("비즈니스 로직 테스트", () => {
+        it("이미 시작된 투표는 삭제할 수 없어야 함", async () => {
+          // 과거 날짜의 투표로 Mock 변경
+          const startedPoll = {
+            pollId: mockPollId,
+            userId: "admin-123",
+            title: "이미 시작된 투표",
+            content: "내용",
+            writerName: "관리자",
+            boardId: "board-123",
+            createdAt: new Date("2024-01-01"),
+            updatedAt: new Date("2024-01-01"),
+            startDate: new Date("2024-01-01T00:00:00Z"), // 과거 날짜
+            endDate: new Date("2024-01-10T23:59:59Z"),
+            status: "IN_PROGRESS",
+          };
+
+          jest
+            .spyOn(AppDataSource, "getRepository")
+            .mockImplementation((entity: any): any => {
+              const entityName =
+                typeof entity === "string" ? entity : entity?.name;
+
+              if (entityName === "User") {
+                return {
+                  findOne: jest.fn().mockResolvedValue({
+                    id: "admin-123",
+                    name: "관리자",
+                    apartment: { id: "apt-123" },
+                  }),
+                };
+              }
+
+              if (entityName === "Poll") {
+                return {
+                  findOne: jest.fn().mockResolvedValue(startedPoll),
+                  delete: jest.fn().mockResolvedValue({ affected: 1 }),
+                };
+              }
+
+              if (entityName === "PollBoard") {
+                return {
+                  findOne: jest.fn().mockResolvedValue({
+                    id: "board-123",
+                    apartmentId: "apt-123",
+                  }),
+                };
+              }
+
+              return {};
+            });
+
+          const response = await request(app)
+            .delete(`/api/polls/${mockPollId}`)
+            .set("Cookie", [`access-token=${adminToken}`]);
+
+          expect(response.status).toBe(400);
+          expect(response.body.message).toContain("이미 시작된 투표");
+        });
       });
     });
   });
