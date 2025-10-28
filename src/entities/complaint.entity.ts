@@ -10,10 +10,14 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { ComplaintBoard } from './complaint-board.entity';
-import { Comment } from './comment.entity';
+import { Comment } from './complaint-comment.entity';
 import { Notification } from './notification.entity';
 
-export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
+export enum ComplaintStatus {
+  PENDING = 'PENDING',
+  IN_PROGRESS = 'IN_PROGRESS',
+  RESOLVED = 'RESOLVED',
+}
 
 @Entity({ name: 'complaints' })
 export class Complaint {
@@ -32,10 +36,10 @@ export class Complaint {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'board_id' })
-  complaintBoard!: ComplaintBoard | null;
+  complaintBoard?: ComplaintBoard | null;
 
   @Column({ type: 'uuid', nullable: true })
-  boardId!: string | null;
+  boardId?: string | null;
 
   @Column({ length: 100 })
   title!: string;
@@ -48,8 +52,8 @@ export class Complaint {
 
   @Column({
     type: 'enum',
-    enum: ['PENDING', 'IN_PROGRESS', 'RESOLVED'],
-    default: 'PENDING',
+    enum: ComplaintStatus,
+    default: ComplaintStatus.PENDING,
   })
   status!: ComplaintStatus;
 
@@ -65,10 +69,16 @@ export class Complaint {
   @Column({ nullable: true })
   ho?: string;
 
-  @OneToMany(() => Comment, (comment) => comment.complaint)
+  // 민원 댓글
+  @OneToMany(() => Comment, (comment) => comment.complaint, {
+    cascade: true,
+  })
   comments!: Comment[];
 
-  @OneToMany(() => Notification, (notification) => notification.complaint)
+  // 민원 관련 알림
+  @OneToMany(() => Notification, (notification) => notification.complaint, {
+    cascade: true,
+  })
   notifications!: Notification[];
 
   @CreateDateColumn({ name: 'created_at' })
