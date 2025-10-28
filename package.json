@@ -62,6 +62,7 @@
     "socket.io": "^4.8.1",
     "streamifier": "^0.1.1",
     "typeorm": "^0.3.26",
+    "uuid": "^13.0.0",
     "zod": "^4.1.9"
   },
   "devDependencies": {
