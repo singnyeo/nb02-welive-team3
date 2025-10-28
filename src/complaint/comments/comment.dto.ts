@@ -1,4 +1,4 @@
-import { BoardType } from "../entities/comment.entity";
+import { BoardType } from "../../entities/complaint-comment.entity";
 
 export class CreateCommentDto {
   content!: string;

@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { User } from './user.entity';
 import { ComplaintBoard } from './complaint-board.entity';
-import { Comment } from './comment.entity';
+import { Comment } from './complaint-comment.entity';
 import { Notification } from './notification.entity';
 
 export type ComplaintStatus = 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
