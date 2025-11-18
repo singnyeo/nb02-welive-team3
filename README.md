@@ -123,6 +123,8 @@
 ###  프로젝트 구조
  🔗 [폴더 구조](https://github.com/nb02-welive-team3-org/nb02-welive-team3-org/wiki/%ED%8F%B4%EB%8D%94-%EA%B5%AC%EC%A1%B0)
  
- 🔗 [ERD 다이어그램](https://www.mermaidchart.com/app/projects/f5ee57b1-5165-4d57-b27b-0853824547f5/diagrams/09d934c8-67b5-4f03-8196-8efdeddcfbe7/version/v0.1/edit)
+ 🔗 ERD 다이어그램
+ <img width="1086" height="745" alt="image" src="https://github.com/user-attachments/assets/5b6d59ad-a3cf-4adb-8bfd-ee40c20d609f" />
+
 
 ---
